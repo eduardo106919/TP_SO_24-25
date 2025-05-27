@@ -11,7 +11,7 @@ Users must use a **client** program to interact with the service. This **interac
 
 Run `make` to compile the program.
 
-The **server** must be initialize before the **client**, otherwise the program will be run properly.
+The **server** must be initialize before the **client**, otherwise the program will not run properly.
 
 ### Server
 
