@@ -34,10 +34,11 @@ There is also an option that allows the user to select the type of cache to use:
 - `cache_type`: type of cache eviction policy to use
 
 The valid values for `cache_type` are:
-- `FIFO`: First In First Out Policy
+- `FIFO`: First In First Out Eviction Policy
 - `RAND`: Random Eviction Policy
-- `LRU`: Leasts Recently Used Eviction Policy
+- `LRU`: Least Recently Used Eviction Policy
 
+**Note**: if the user does not specify an eviction policy, the **Random Eviction Policy** is used.
 
 ### Client
 
@@ -76,7 +77,7 @@ Return a **list** of document identifiers that contain a given **keyword**, usin
 - `keyword`: word to look for
 - `nr_processes`: number of processes to use
 
-**Note**: If `nr_processes` is not specified, the default value is 1.
+**Note**: if `nr_processes` is not specified, the default value is 1.
 
 To **shut down** the server, run:
 ```bash
