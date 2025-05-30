@@ -42,6 +42,11 @@ fmt:
 	@shfmt -w -i 2 -l -ci .
 
 
+.PHONY: docs
+docs:
+	@doxygen -q $(DOC_DIR)/Doxyfile
+
+
 .PHONY: trash
 trash:
 	rm -f $(TMP_DIR)/*
