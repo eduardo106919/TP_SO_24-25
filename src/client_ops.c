@@ -1,0 +1,112 @@
+
+#include "client_ops.h"
+
+#include <string.h>
+
+
+Operation check_operation(const char *opr) {
+    if (strlen(opr) != 2) {
+        return NONE;
+    }
+
+    Operation result = NONE;
+
+    switch (opr[1]) {
+    case 'a':
+        result = INDEX;
+        break;
+    case 'd':
+        result = REMOVE;
+        break;
+    case 'c':
+        result = CONSULT;
+        break;
+    case 'l':
+        result = COUNT_WORD;
+        break;
+    case 's':
+        result = LIST_WORD;
+        break;
+    case 'f':
+        result = SHUTDOWN;
+        break;
+    default:
+        result = NONE;
+        break;
+    }
+
+    return result;
+}
+
+int define_request(Request *request, int argc, char **argv) {
+    request->operation = check_operation(argv[1]);
+    if (request->operation == NONE) {
+        return 1;
+    }
+
+    switch (request->operation) {
+    case INDEX:
+        if (argc != 6) {
+            return 1;
+        }
+
+        strcpy(request->title, argv[2]);
+        strcpy(request->authors, argv[3]);
+        strcpy(request->year, argv[4]);
+        strcpy(request->path, argv[5]);
+
+        break;
+    case REMOVE:
+        if (argc != 3) {
+            return 1;
+        }
+
+        strcpy(request->title, argv[2]);
+
+        break;
+    case CONSULT:
+        if (argc != 3) {
+            return 1;
+        }
+
+        strcpy(request->title, argv[2]);
+
+        break;
+    case COUNT_WORD:
+        if (argc != 4) {
+            return 1;
+        }
+
+        strcpy(request->title, argv[2]);
+        strcpy(request->authors, argv[3]);
+
+        break;
+    case LIST_WORD:
+        if (argc != 3 && argc != 4) {
+            return 1;
+        }
+
+        strcpy(request->title, argv[2]);
+        if (argc == 4) {
+            strcpy(request->authors, argv[3]);
+        } else {
+            strcpy(request->authors, "1\0");
+        }
+
+        break;
+    default:
+        break;
+    }
+
+    request->client = getpid();
+    return 0;
+}
+
+
+void show_reply(const Reply *reply) {
+    if (reply->valid == 0) {
+        printf("response is not valid\n");
+    } else {
+        printf("%s\n", reply->responde);
+    }
+}
