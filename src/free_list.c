@@ -118,3 +118,61 @@ void fl_show(const Free_List * fl) {
     }
 }
 
+
+Free_List * fl_upload(int file) {
+    Free_List * fl = fl_create();
+    if (fl == NULL) {
+        return NULL;
+    }
+
+    unsigned size = 0;
+
+    // read the number of links
+    ssize_t out = read(file, &size, sizeof(size));
+    if (out == -1) {
+        perror("read()");
+        return fl;
+    }
+
+    if (out == 0) {
+        return fl;
+    }
+
+    struct link temp;
+    unsigned i = 0;
+
+    // iterate over the recorded links
+    while (i < size && (out = read(file, &temp, sizeof(temp))) > 0) {
+        // add the position and id to the free list
+        if(fl_push(fl, temp.position, temp.id) != 0) {
+            return fl;
+        }
+
+        i++;
+    }
+
+    if (out == -1) {
+        perror("read() 2");
+    }
+
+    return fl;
+}
+
+
+void fl_record(const Free_List * fl, int file) {
+    if (fl != NULL) {
+        // record the size of the list in the file
+        ssize_t out = write(file, &(fl->size), sizeof(fl->size));
+        
+        struct link * temp = fl->head;
+
+        // record every link from the list in the file
+        while (temp != NULL && out > 0) {
+            out = write(file, temp, sizeof(struct link));
+        }
+
+        if (out == -1) {
+            perror("write()");
+        }
+    }
+}

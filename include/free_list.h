@@ -19,6 +19,8 @@ unsigned fl_size(const Free_List * fl);
 bool fl_is_empty(const Free_List * fl);
 void fl_show(const Free_List * fl);
 
+Free_List * fl_upload(int file);
+void fl_record(const Free_List * fl, int file);
 
 
 #endif

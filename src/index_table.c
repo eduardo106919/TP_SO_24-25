@@ -129,3 +129,54 @@ void it_show(const Index_Table *it) {
     }
 }
 
+
+Index_Table * it_upload(int file) {
+    Index_Table * it = it_create();
+    if (it == NULL) {
+        return NULL;
+    }
+
+    unsigned size = 0;
+    struct entry temp;
+
+    // read the number of entries recorded
+    ssize_t out = read(file, &size, sizeof(size));
+    if (out == -1) {
+        perror("read()");
+        return it;
+    }
+
+    if (out == 0) {
+        return it;
+    }
+
+    unsigned i = 0;
+    // iterate over the recorded entries
+    while (i < size && (out = read(file, &temp, sizeof(temp))) > 0) {
+        if (temp.valid != 0) {
+            it_add_entry(it, temp.position, i);
+        }
+
+        i++;
+    }
+    
+    if (out == -1) {
+        perror("read() 3");
+    }
+
+    return it;
+}
+
+void it_record(const Index_Table * it, int file) {
+    if (it != NULL) {
+        // record the capacity of the table in the file
+        ssize_t out = write(file, &(it->capacity), sizeof(it->capacity));
+        
+        // record the table in the file
+        out = write(file, it->table, it->capacity * sizeof(struct entry));
+
+        if (out == -1) {
+            perror("write()");
+        }
+    }
+}

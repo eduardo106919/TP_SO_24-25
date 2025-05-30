@@ -18,5 +18,8 @@ unsigned it_size(const Index_Table *it);
 bool it_is_empty(const Index_Table *it);
 void it_show(const Index_Table *it);
 
+Index_Table * it_upload(int file);
+void it_record(const Index_Table * it, int file);
+
 
 #endif
