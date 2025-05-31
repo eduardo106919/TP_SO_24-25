@@ -45,6 +45,7 @@ fmt:
 .PHONY: docs
 docs:
 	@doxygen -q $(DOC_DIR)/Doxyfile
+	@firefox $(DOC_DIR)/html/index.html
 
 
 .PHONY: trash
