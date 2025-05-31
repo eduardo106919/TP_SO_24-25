@@ -1,6 +1,7 @@
 #include "server_ops.h"
 #include "free_list.h"
 #include "index_table.h"
+#include "document.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,8 @@ typedef struct server {
 
 
 Server * start_server(const char *document_folder, int cache_size) {
+    printf("\n[SERVER IS STARTING]\n");
+
     Server * server = (Server *) calloc(1, sizeof(Server));
     if (server == NULL) {
         return NULL;
@@ -70,58 +73,127 @@ Server * start_server(const char *document_folder, int cache_size) {
     close(control_file);
     unlink(CONTROL_FILE);
 
+    set_global_id(it_size(server->index_table) + 1);
 
     // TODO
     // start the cache
 
+    it_show(server->index_table);
+    fl_show(server->free_list);
 
+    printf("\n[SERVER IS ONLINE]\n");
     return server;
 }
 
 
-static void send_response(const Request *request) {
+static void send_response(pid_t client, const char * response, Operation operation) {
 
     Reply reply;
 
-    reply.operation = request->operation;
+    reply.operation = operation;
     reply.valid = 1;
-    strcpy(reply.responde, "hello from server");
-
+    strcpy(reply.response, response);
+    
     char client_fifo[50];
-    sprintf(client_fifo, "%s_%d", CLIENT_FIFO, request->client);
+    sprintf(client_fifo, "%s_%d", CLIENT_FIFO, client);
 
+    // open the client fifo to send response
     int output = open(client_fifo, O_WRONLY);
     if (output == -1) {
         perror("open()");
         return;
     }
 
+    // send response
     ssize_t out = write(output, &reply, sizeof(reply));
     if (out == -1) {
         perror("write()");
         return;
     }
+
+    close(output);
 }
+
+
 
 int process_request(Server * server, const Request *request) {
     
-    printf("client: %d\n", request->client);
-    printf("operation: %d\n", request->operation);
-    printf("title: %s\n", request->title);
-    printf("authors: %s\n", request->authors);
-    printf("year: %s\n", request->year);
-    printf("path: %s\n", request->path);
+    switch (request->operation) {
+    case INDEX:
+        /* index document */
+
+        unsigned identifier = 0;
+        off_t position = fl_pop(server->free_list, &identifier);
+        
+        if (position == -1) {
+            // empty list, append to the file
+            position = lseek(server->metadata_file, 0, SEEK_END);
+        } else {
+            // go to the empty spot
+            lseek(server->metadata_file, position, SEEK_SET);
+        }
+
+        // create document
+        Document * doc = create_document(identifier, request->title, request->authors, request->year, request->path);
+        if (doc == NULL) {
+            return -1;
+        }
+
+        // write the document in the metadata file
+        ssize_t out = write(server->metadata_file, doc, sizeof(Document));
+        if (out == -1) {
+            perror("write()");
+            return -1;
+        }
+
+        identifier = get_document_id(doc);
+        destroy_document(doc);
+
+        // add entry to the index table
+        if (it_add_entry(server->index_table, position, identifier) != 0) {
+            return -1;
+        }
+
+        char response[10];
+        sprintf(response, "%u", identifier);
+
+        send_response(request->client, response, request->operation);
+
+        break;
+
+    case REMOVE:
+        /* remove index */
+        break;
+    
+    case SHUTDOWN:
+        /* shutdown the server */
+
+        return 1;
+
+        break;
+
+    default:
+        break;
+    }
 
 
-    send_response(request);
+
 
     return 0;
 }
 
+
+
+
 void shutdown_server(Server * server) {
+    printf("\n[SERVER IS SHUTTING DOWN]\n");
+
     if (server->document_folder != NULL) {
         free(server->document_folder);
     }
+
+    it_show(server->index_table);
+    fl_show(server->free_list);
 
     // close the metadata file
     close(server->metadata_file);
@@ -147,6 +219,11 @@ void shutdown_server(Server * server) {
     // TODO
     // FREE THE CACHE
 
-
+    
+    close(server->metadata_file);
     free(server);
+
+    unlink(SERVER_FIFO);
+
+    printf("\n[SERVER IS OFFLINE]\n");
 }
