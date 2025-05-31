@@ -48,6 +48,7 @@ int main(int argc, char **argv) {
     int server = open(SERVER_FIFO, O_WRONLY);
     if (server == -1) {
         perror("open()");
+        unlink(fifo_name);
         return 2;
     }
 
@@ -57,33 +58,39 @@ int main(int argc, char **argv) {
 
     if (out == -1) {
         perror("write()");
+        unlink(fifo_name);
         return 2;
     }
 
-    int client = open(fifo_name, O_RDONLY);
-    if (client == -1) {
-        perror("open()");
-        return 2;
+    if (request.operation != SHUTDOWN) {
+        // open the private chanel
+        int client = open(fifo_name, O_RDONLY);
+        if (client == -1) {
+            perror("open()");
+            unlink(fifo_name);
+            return 2;
+        }
+
+        Reply reply;
+
+        // receive response from server
+        out = read(client, &reply, sizeof(reply));
+        close(client);
+
+        if (out == -1) {
+            perror("read()");
+            unlink(fifo_name);
+            return 2;
+        }
+
+        unlink(fifo_name);
+
+
+        // show response to user
+        show_reply(&reply);
     }
-
-    Reply reply;
-
-    // receive response from server
-    out = read(client, &reply, sizeof(reply));
-    close(client);
-
-    if (out == -1) {
-        perror("read()");
-        return 2;
-    }
-
-    unlink(fifo_name);
-
-
-    // show response to user
-    show_reply(&reply);
-
     
+    unlink(fifo_name);
 
     return 0;
 }

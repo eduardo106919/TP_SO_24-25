@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct {
     Operation operation;
-    char responde[BUFSIZ];
+    char response[BUFSIZ];
     char valid;
 } Reply;
 

@@ -107,6 +107,6 @@ void show_reply(const Reply *reply) {
     if (reply->valid == 0) {
         printf("response is not valid\n");
     } else {
-        printf("%s\n", reply->responde);
+        printf("%s\n", reply->response);
     }
 }
