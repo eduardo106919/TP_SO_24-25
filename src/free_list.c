@@ -170,6 +170,8 @@ void fl_record(const Free_List * fl, int file) {
         // record every link from the list in the file
         while (temp != NULL && out > 0) {
             out = write(file, temp, sizeof(struct link));
+            
+            temp = temp->next;
         }
 
         if (out == -1) {

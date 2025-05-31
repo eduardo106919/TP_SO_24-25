@@ -117,13 +117,15 @@ static void send_response(pid_t client, const char * response, Operation operati
 
 
 int process_request(Server * server, const Request *request) {
+    unsigned identifier = 0;
+    off_t position = 0;
+    char response[50];
     
     switch (request->operation) {
     case INDEX:
         /* index document */
 
-        unsigned identifier = 0;
-        off_t position = fl_pop(server->free_list, &identifier);
+        position = fl_pop(server->free_list, &identifier);
         
         if (position == -1) {
             // empty list, append to the file
@@ -154,7 +156,6 @@ int process_request(Server * server, const Request *request) {
             return -1;
         }
 
-        char response[10];
         sprintf(response, "%u", identifier);
 
         send_response(request->client, response, request->operation);
@@ -163,6 +164,21 @@ int process_request(Server * server, const Request *request) {
 
     case REMOVE:
         /* remove index */
+
+        identifier = atoi(request->title);
+
+        // remove entry from table
+        position = it_remove_entry(server->index_table, identifier);
+
+        if (position != -1) {
+            // add free position and id to free list
+            fl_push(server->free_list, position, identifier);
+        }
+
+        sprintf(response, "%u", identifier);
+
+        send_response(request->client, response, request->operation);
+
         break;
     
     case SHUTDOWN:

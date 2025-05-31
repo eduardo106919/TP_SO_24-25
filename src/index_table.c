@@ -104,14 +104,14 @@ off_t it_remove_entry(Index_Table *it, unsigned id) {
         return -1;
     }
 
-    if (it->table[id].valid == 0) {
+    if (it->table[id - 1].valid == 0) {
         return -1;
     }
 
-    it->table[id].valid = 0;
+    it->table[id - 1].valid = 0;
     it->count--;
     
-    return it->table[id].position;
+    return it->table[id - 1].position;
 }
 
 
