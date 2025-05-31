@@ -111,6 +111,7 @@ void fl_show(const Free_List * fl) {
     if (fl != NULL) {
         struct link * temp = fl->head;
 
+        printf("\n- FREE LIST [size: %3u]\n", fl->size);
         while (temp != NULL) {
             printf("[%4u, %5ld]\n", temp->id, temp->position);
             temp = temp->next;
