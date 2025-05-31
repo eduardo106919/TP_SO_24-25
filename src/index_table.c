@@ -61,28 +61,32 @@ int it_add_entry(Index_Table *it, off_t position, unsigned id) {
 
     // table is full, or id is bigger
     if (it->count == it->capacity || id > it->capacity) {
-        unsigned temp = it->capacity;
+        unsigned temp = it->capacity * 2;
 
-        it->capacity *= 2;
-        if (id > it->capacity) {
-            it->capacity = id + 1;
+        if (id > temp) {
+            temp = id + 1;
         }
 
-        it->table = (struct entry *) realloc(it->table, it->capacity * sizeof(struct entry));
-        if (it->table == NULL) {
+        struct entry * other = (struct entry *) realloc(it->table, temp * sizeof(struct entry));
+        if (other == NULL) {
             free(it);
             return -1;
         }
 
-        for (; temp < it->capacity; temp++) {
-            it->table[temp].valid = 0;
+        it->table = other;
+
+        unsigned i = it->capacity;
+        it->capacity = temp;
+
+        for (; i < it->capacity; i++) {
+            it->table[i].valid = 0;
         }
     }
 
-    if (it->table[id].valid == 0) {
+    if (it->table[id-1].valid == 0) {
         // add entry to table
-        it->table[id].valid = 1;
-        it->table[id].position = position;
+        it->table[id-1].valid = 1;
+        it->table[id-1].position = position;
 
         it->count++;
     }
@@ -123,8 +127,11 @@ bool it_is_empty(const Index_Table *it) {
 
 void it_show(const Index_Table *it) {
     if (it != NULL) {
+        
+        printf("\n- INDEX TABLE [capacity: %5u, count: %5u]\n", it->capacity, it->count);
+
         for (unsigned i = 0; i < it->capacity; i++) {
-            printf("[%4u, %d, %ld]\n", i, it->table[i].valid, it->table[i].position);
+            printf("[%4u, %d, %8ld]\n", i, it->table[i].valid, it->table[i].position);
         }
     }
 }
@@ -154,7 +161,7 @@ Index_Table * it_upload(int file) {
     // iterate over the recorded entries
     while (i < size && (out = read(file, &temp, sizeof(temp))) > 0) {
         if (temp.valid != 0) {
-            it_add_entry(it, temp.position, i);
+            it_add_entry(it, temp.position, i + 1);
         }
 
         i++;
