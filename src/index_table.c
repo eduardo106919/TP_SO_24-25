@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 
-#define INIT_SIZE 100
+#define INIT_SIZE 20
 
 
 struct entry {
@@ -115,6 +115,24 @@ off_t it_remove_entry(Index_Table *it, unsigned id) {
 }
 
 
+off_t it_get_entry(const Index_Table * it, unsigned id) {
+    if (it == NULL) {
+        return -1;
+    }
+
+    if (id >= it->capacity) {
+        return -1;
+    }
+
+    // check if the entry is valid
+    if (it->table[id - 1].valid != 0) {
+        return it->table[id - 1].position;
+    }
+
+    return -1;
+}
+
+
 unsigned it_size(const Index_Table *it) {
     return it == NULL ? 0 : it->count;
 }
@@ -131,7 +149,7 @@ void it_show(const Index_Table *it) {
         printf("\n- INDEX TABLE [capacity: %5u, count: %5u]\n", it->capacity, it->count);
 
         for (unsigned i = 0; i < it->capacity; i++) {
-            printf("[%4u, %d, %8ld]\n", i, it->table[i].valid, it->table[i].position);
+            printf("[%4u, %d, %5ld]\n", i, it->table[i].valid, it->table[i].position);
         }
     }
 }

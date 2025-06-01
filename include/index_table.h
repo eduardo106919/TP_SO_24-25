@@ -84,6 +84,8 @@ int it_add_entry(Index_Table *it, off_t position, unsigned id);
  */
 off_t it_remove_entry(Index_Table *it, unsigned id);
 
+off_t it_get_entry(const Index_Table * it, unsigned id);
+
 /**
  * @brief Returns the current number of entries in the table
  * 

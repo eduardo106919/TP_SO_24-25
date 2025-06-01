@@ -86,14 +86,7 @@ Server * start_server(const char *document_folder, int cache_size) {
 }
 
 
-static void send_response(pid_t client, const char * response, Operation operation) {
-
-    Reply reply;
-
-    reply.operation = operation;
-    reply.valid = 1;
-    strcpy(reply.response, response);
-    
+static void send_response(pid_t client, const void * response, size_t size) {
     char client_fifo[50];
     sprintf(client_fifo, "%s_%d", CLIENT_FIFO, client);
 
@@ -105,7 +98,7 @@ static void send_response(pid_t client, const char * response, Operation operati
     }
 
     // send response
-    ssize_t out = write(output, &reply, sizeof(reply));
+    ssize_t out = write(output, response, size);
     if (out == -1) {
         perror("write()");
         return;
@@ -114,12 +107,36 @@ static void send_response(pid_t client, const char * response, Operation operati
     close(output);
 }
 
+static Document * get_document(Server * server, unsigned identifier) {
+
+    off_t position = it_get_entry(server->index_table, identifier);
+    if (position == -1) {
+        return NULL;
+    }
+
+    Document doc;
+
+    // go to the right position
+    if (lseek(server->metadata_file, position, SEEK_SET) == -1) {
+        perror("lseek()");
+        return NULL;
+    }
+
+    ssize_t out = read(server->metadata_file, &doc, sizeof(doc));
+    if (out == -1) {
+        perror("read()");
+        return NULL;
+    }
+
+    return clone_document(&doc);
+}
 
 
 int process_request(Server * server, const Request *request) {
     unsigned identifier = 0;
     off_t position = 0;
-    char response[50];
+    pid_t proc = 0;
+    Document * doc = NULL;
     
     switch (request->operation) {
     case INDEX:
@@ -136,7 +153,7 @@ int process_request(Server * server, const Request *request) {
         }
 
         // create document
-        Document * doc = create_document(identifier, request->title, request->authors, request->year, request->path);
+        doc = create_document(identifier, request->title, request->authors, request->year, request->path);
         if (doc == NULL) {
             return -1;
         }
@@ -156,9 +173,7 @@ int process_request(Server * server, const Request *request) {
             return -1;
         }
 
-        sprintf(response, "%u", identifier);
-
-        send_response(request->client, response, request->operation);
+        send_response(request->client, &identifier, sizeof(identifier));
 
         break;
 
@@ -173,14 +188,35 @@ int process_request(Server * server, const Request *request) {
         if (position != -1) {
             // add free position and id to free list
             fl_push(server->free_list, position, identifier);
+        } else {
+            // document not found
+            identifier = 0;
         }
 
-        sprintf(response, "%u", identifier);
-
-        send_response(request->client, response, request->operation);
+        send_response(request->client, &identifier, sizeof(identifier));
 
         break;
     
+    case CONSULT:
+        /* consult a document */
+
+        identifier = atoi(request->title);
+
+        // get the document (from cache or file)
+        doc = get_document(server, identifier);
+
+        // document was not found
+        if (doc == NULL) {
+            doc = malloc(sizeof(Document));
+            doc->id = 0;
+        }
+
+        send_response(request->client, doc, sizeof(Document));
+
+        destroy_document(doc);
+
+        break;
+
     case SHUTDOWN:
         /* shutdown the server */
 
