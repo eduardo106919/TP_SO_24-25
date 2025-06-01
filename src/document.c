@@ -19,8 +19,9 @@ Document * create_document(unsigned id, const char *title, const char *authors, 
     }
 
     if (id == 0) {
-        id = global_ids++;
+        id = global_ids;
     }
+    global_ids++;
 
     doc->id = id;
 
@@ -66,4 +67,14 @@ unsigned get_document_id(const Document * doc) {
 
 void set_global_id(unsigned id) {
     global_ids = id;
+}
+
+
+void show_document(const Document * doc) {
+    if (doc != NULL) {
+        printf("Title: %s\n", doc->title);
+        printf("Authors: %s\n", doc->authors);
+        printf("Year: %s\n", doc->year);
+        printf("Path: %s\n", doc->path);
+    }
 }

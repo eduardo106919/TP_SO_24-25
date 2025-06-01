@@ -2,11 +2,13 @@
 #include "defs.h"
 #include "utils.h"
 #include "client_ops.h"
+#include "document.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 
 static void usage(const char *command) {
@@ -71,10 +73,27 @@ int main(int argc, char **argv) {
             return 2;
         }
 
-        Reply reply;
+        size_t response_size = 0;
+
+        switch (request.operation) {
+        case INDEX:
+            response_size = sizeof(unsigned);
+            break;
+        case REMOVE:
+            response_size = sizeof(unsigned);
+            break;
+        case CONSULT:
+            response_size = sizeof(Document);
+            break;
+        default:
+            break;
+        }
+
+        void * response = malloc(response_size);
+
 
         // receive response from server
-        out = read(client, &reply, sizeof(reply));
+        out = read(client, response, response_size);
         close(client);
 
         if (out == -1) {
@@ -87,7 +106,7 @@ int main(int argc, char **argv) {
 
 
         // show response to user
-        show_reply(&reply);
+        show_reply(request.operation, response);
     }
     
     unlink(fifo_name);

@@ -1,5 +1,6 @@
 
 #include "client_ops.h"
+#include "document.h"
 
 #include <string.h>
 
@@ -103,10 +104,34 @@ int define_request(Request *request, int argc, char **argv) {
 }
 
 
-void show_reply(const Reply *reply) {
-    if (reply->valid == 0) {
-        printf("response is not valid\n");
-    } else {
-        printf("%s\n", reply->response);
+void show_reply(Operation op, const void * reply) {
+
+    switch (op) {
+    case INDEX:
+        printf("Document %u indexed\n", * (unsigned *) reply);
+
+        break;
+    case REMOVE:
+        unsigned identifier = * (unsigned *) reply;
+
+        if (identifier == 0) {
+            printf("Document was not found\n");
+        } else {
+            printf("Index entry %u deleted\n", identifier);
+        }
+
+        break;
+    case CONSULT:
+        Document * doc = (Document *) reply;
+        if (doc->id == 0) {
+            printf("Document was not found\n");
+        } else {
+            show_document(doc);
+        }
+
+        break;
+    default:
+        break;
     }
+
 }

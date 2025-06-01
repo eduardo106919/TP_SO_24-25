@@ -21,4 +21,6 @@ unsigned get_document_id(const Document * doc);
 
 void set_global_id(unsigned id);
 
+void show_document(const Document * doc);
+
 #endif
