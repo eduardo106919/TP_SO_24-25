@@ -2,11 +2,13 @@
 #include "free_list.h"
 #include "index_table.h"
 #include "document.h"
+#include "utils.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 typedef struct server {
     char *document_folder;
@@ -87,6 +89,9 @@ Server * start_server(const char *document_folder, int cache_size) {
 
 
 static void send_response(pid_t client, const void * response, size_t size) {
+    pid_t proc = fork();
+
+    if (proc == 0) {
     char client_fifo[50];
     sprintf(client_fifo, "%s_%d", CLIENT_FIFO, client);
 
@@ -105,6 +110,30 @@ static void send_response(pid_t client, const void * response, size_t size) {
     }
 
     close(output);
+
+    int server = open(SERVER_FIFO, O_WRONLY);
+    if (server == -1) {
+        perror("open()");
+        return;
+    }
+
+    Request request;
+    request.operation = KILL;
+    request.client = getpid();
+
+    // tell the server that the job is done
+    out = write(server, &request, sizeof(request));
+    close(server);
+    if (out == -1) {
+        perror("write()");
+        return;
+    }
+
+    _exit(0);
+    } else if (proc == -1) {
+        /* error code */
+        perror("fork()");
+    }
 }
 
 static Document * get_document(Server * server, unsigned identifier) {
@@ -217,8 +246,40 @@ int process_request(Server * server, const Request *request) {
 
         break;
 
+    case COUNT_WORD:
+        /* count keyword */
+
+        identifier = atoi(request->title);
+
+        // get the document (from cache or file)
+        doc = get_document(server, identifier);
+
+        int count = -1;
+        if (doc != NULL) {
+            char *path = join_paths(server->document_folder, doc->path);
+            // count the number of lines
+            count = count_keyword(path, request->authors);
+
+            if (path != NULL) {
+                free(path);
+            }
+        }
+
+        send_response(request->client, &count, sizeof(count));
+
+        break;
+
+    case KILL:
+        /* wait for child process */
+
+        // NEEDS IMPROVEMENTS, TEMPORARY
+        waitpid(request->client, NULL, 0);
+
+        break;
     case SHUTDOWN:
         /* shutdown the server */
+
+        identifier = atoi(request->title);
 
         return 1;
 

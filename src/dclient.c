@@ -85,6 +85,9 @@ int main(int argc, char **argv) {
         case CONSULT:
             response_size = sizeof(Document);
             break;
+        case COUNT_WORD:
+            response_size = sizeof(int);
+            break;
         default:
             break;
         }

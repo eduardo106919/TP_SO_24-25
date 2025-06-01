@@ -5,5 +5,9 @@
 
 int create_fifo(const char *name);
 
+int count_keyword(const char * path, const char * keyword);
+
+char * join_paths(const char *folder, const char * file);
+
 
 #endif

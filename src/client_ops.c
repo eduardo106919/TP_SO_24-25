@@ -130,6 +130,17 @@ void show_reply(Operation op, const void * reply) {
         }
 
         break;
+    case COUNT_WORD:
+
+        int count = * (int *) reply;
+
+        if (count == -1) {
+            printf("Document was not found\n");
+        } else {
+            printf("Count: %d\n", count);
+        }
+
+        break;
     default:
         break;
     }
