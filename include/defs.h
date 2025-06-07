@@ -27,7 +27,6 @@ typedef enum {
     LIST_WORD,
     SHUTDOWN,
     KILL,
-    NONE
 } Operation;
 
 

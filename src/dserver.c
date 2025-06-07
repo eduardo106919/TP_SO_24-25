@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "defs.h"
 #include "server_ops.h"
+#include "cache.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
     }
 
     // start the server (open files, create data structures, ...)
-    Server * server = start_server(argv[1], atoi(argv[2]));
+    Server * server = start_server(argv[1], atoi(argv[2]), NONE);
 
     Request request;
     int stop = 0, input = 0;

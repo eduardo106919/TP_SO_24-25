@@ -4,6 +4,7 @@
 #include "document.h"
 #include "utils.h"
 #include "defs.h"
+#include "cache.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -18,6 +19,7 @@ typedef struct server {
     int requests_log_pipe;
     Free_List * free_list;
     Index_Table * index_table;
+    Cache * cache;
 } Server;
 
 
@@ -88,7 +90,7 @@ static void record_requests(int reading_side) {
     }
 }
 
-Server * start_server(const char *document_folder, int cache_size) {
+Server * start_server(const char *document_folder, int cache_size, Cache_Type type) {
     printf("\n[SERVER IS STARTING]\n");
 
     Server * server = (Server *) calloc(1, sizeof(Server));
@@ -174,11 +176,20 @@ Server * start_server(const char *document_folder, int cache_size) {
     close(requests_pipe[0]);
     server->requests_log_pipe = requests_pipe[1];
 
-    // TODO
     // start the cache
+    if (type != NONE) {
+        server->cache = cache_start(cache_size, type, server->metadata_file);
+        if (server->cache == NULL) {
+            shutdown_server(server);
+            return NULL;
+        }
+    } else {
+        server->cache = NULL;
+    }
 
     it_show(server->index_table);
     fl_show(server->free_list);
+    show_cache(server->cache);
 
     printf("\n[SERVER IS ONLINE]\n");
     return server;
@@ -234,22 +245,28 @@ static Document * get_document(Server * server, int identifier) {
         return NULL;
     }
 
-    Document doc;
+    if (server->cache == NULL) {
+        // get document from disk
+        Document doc;
 
-    // go to the right position
-    if (lseek(server->metadata_file, identifier * sizeof(Document), SEEK_SET) == -1) {
-        perror("lseek()");
-        return NULL;
+        // go to the right position
+        if (lseek(server->metadata_file, identifier * sizeof(Document), SEEK_SET) == -1) {
+            perror("lseek()");
+            return NULL;
+        }
+
+        // read the metadata
+        ssize_t out = read(server->metadata_file, &doc, sizeof(doc));
+        if (out == -1) {
+            perror("read()");
+            return NULL;
+        }
+
+        return clone_document(&doc);
     }
 
-    // read the metadata
-    ssize_t out = read(server->metadata_file, &doc, sizeof(doc));
-    if (out == -1) {
-        perror("read()");
-        return NULL;
-    }
-
-    return clone_document(&doc);
+    // get document from cache
+    return cache_get_document(server->cache, identifier);
 }
 
 
@@ -273,7 +290,6 @@ static char * list_documents(Server * server, const char * keyword, int n_procs)
     int * valid_ids = it_get_valid_ids(server->index_table);
     unsigned count = it_size(server->index_table);
     unsigned chunk = count / n_procs;
-    int metatada = -1;
     char * path;
 
     if (n_procs > count) {
@@ -300,8 +316,8 @@ static char * list_documents(Server * server, const char * keyword, int n_procs)
             }
 
             // open the metadata.bin file
-            metatada = open(STORAGE_FILE, O_RDONLY);
-            if (metatada == -1) {
+            server->metadata_file = open(STORAGE_FILE, O_RDONLY);
+            if (server->metadata_file == -1) {
                 perror("open()");
                 _exit(1);
             }
@@ -462,22 +478,22 @@ int process_request(Server * server, const Request *request) {
 
         identifier = atoi(request->title);
 
+        // get the document (from cache or disk)
+        doc = get_document(server, identifier);
+
         switch (fork()) {
             case -1:
                 perror("fork()");
                 return 1;
             case 0:
 
-                close(server->metadata_file);
-                // re-open the file, so the offset is not shared
-                server->metadata_file = open(STORAGE_FILE, O_RDONLY);
-                if (server->metadata_file == -1) {
-                    perror("open()");
-                    _exit(1);
-                }
-
-                // get the document (from cache or disk)
-                doc = get_document(server, identifier);
+                // close(server->metadata_file);
+                // // re-open the file, so the offset is not shared
+                // server->metadata_file = open(STORAGE_FILE, O_RDONLY);
+                // if (server->metadata_file == -1) {
+                //     perror("open()");
+                //     _exit(1);
+                // }
 
                 // document was not found
                 if (doc == NULL) {
@@ -498,16 +514,17 @@ int process_request(Server * server, const Request *request) {
     case COUNT_WORD:
         /* count keyword */
 
+        identifier = atoi(request->title);
+
+        // get the document (from cache or file)
+        doc = get_document(server, identifier);
+
         switch (fork()) {
             case -1:
                 perror("fork()");
                 return 1;
             case 0:
 
-                identifier = atoi(request->title);
-
-                // get the document (from cache or file)
-                doc = get_document(server, identifier);
 
                 int count = -1;
                 if (doc != NULL) {
@@ -596,6 +613,7 @@ void shutdown_server(Server * server) {
 
     it_show(server->index_table);
     fl_show(server->free_list);
+    show_cache(server->cache);
 
     // close the metadata file
     close(server->metadata_file);
@@ -616,13 +634,10 @@ void shutdown_server(Server * server) {
     // free the data structures
     fl_destroy(server->free_list);
     it_destroy(server->index_table);
+    cache_destroy(server->cache);
 
     close(server->requests_log_pipe);
 
-    // TODO
-    // FREE THE CACHE
-
-    
     close(server->metadata_file);
     free(server);
 
