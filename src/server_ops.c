@@ -462,20 +462,29 @@ int process_request(Server * server, const Request *request) {
 
         identifier = atoi(request->title);
 
-        // get the document (from cache or disk)
-        doc = get_document(server, identifier);
-
-        // document was not found
-        if (doc == NULL) {
-            doc = malloc(sizeof(Document));
-            sprintf(doc->title, "Document was not found");
-        }
-
         switch (fork()) {
             case -1:
                 perror("fork()");
                 return 1;
             case 0:
+
+                close(server->metadata_file);
+                // re-open the file, so the offset is not shared
+                server->metadata_file = open(STORAGE_FILE, O_RDONLY);
+                if (server->metadata_file == -1) {
+                    perror("open()");
+                    _exit(1);
+                }
+
+                // get the document (from cache or disk)
+                doc = get_document(server, identifier);
+
+                // document was not found
+                if (doc == NULL) {
+                    doc = malloc(sizeof(Document));
+                    sprintf(doc->title, "Document was not found");
+                }
+
                 send_response(request->client, doc, sizeof(Document));
                 _exit(0);
             default:
@@ -489,16 +498,17 @@ int process_request(Server * server, const Request *request) {
     case COUNT_WORD:
         /* count keyword */
 
-        identifier = atoi(request->title);
-
-        // get the document (from cache or file)
-        doc = get_document(server, identifier);
-
         switch (fork()) {
             case -1:
                 perror("fork()");
                 return 1;
             case 0:
+
+                identifier = atoi(request->title);
+
+                // get the document (from cache or file)
+                doc = get_document(server, identifier);
+
                 int count = -1;
                 if (doc != NULL) {
                     char *path = join_paths(server->document_folder, doc->path);
@@ -521,15 +531,15 @@ int process_request(Server * server, const Request *request) {
     case LIST_WORD:
         /* identify the documents that contain the keyword */
 
-        // get the number of processes
-        int n_procs = atoi(request->authors);
-
         switch (fork()) {
         case -1:
             /* error code */
             perror("fork()");
             return -1;
         case 0:
+
+            // get the number of processes
+            int n_procs = atoi(request->authors);
 
             // get the list of ids
             char * other = list_documents(server, request->title, n_procs);
