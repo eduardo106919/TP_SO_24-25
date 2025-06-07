@@ -7,10 +7,10 @@
 
 Operation check_operation(const char *opr) {
     if (strlen(opr) != 2) {
-        return NONE;
+        return -1;
     }
 
-    Operation result = NONE;
+    Operation result = -1;
 
     switch (opr[1]) {
     case 'a':
@@ -32,7 +32,6 @@ Operation check_operation(const char *opr) {
         result = SHUTDOWN;
         break;
     default:
-        result = NONE;
         break;
     }
 
@@ -41,7 +40,7 @@ Operation check_operation(const char *opr) {
 
 int define_request(Request *request, int argc, char **argv) {
     request->operation = check_operation(argv[1]);
-    if (request->operation == NONE) {
+    if (request->operation == -1) {
         return 1;
     }
 

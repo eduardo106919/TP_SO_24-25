@@ -8,11 +8,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 
 
 static void usage(const char *command) {
     printf("Usage:\n");
-    printf("%s [-g] document_folder cache_size [cache_type]\n", command);
+    printf("%s document_folder cache_size [cache_type]\n", command);
 }
 
 
@@ -24,6 +25,16 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // determine the cache type
+    Cache_Type type = NONE;
+    if (strcmp(argv[argc - 1], "FIFO") == 0) {
+        type = FIFO;
+    } else if (strcmp(argv[argc - 1], "RAND") == 0) {
+        type = RAND;
+    } else if (strcmp(argv[argc - 1], "LRU") == 0) {
+        type = LRU;
+    }
+
     // create server fifo
     if (create_fifo(SERVER_FIFO) != 0) {
         printf("Error creating fifo %s\n", SERVER_FIFO);
@@ -31,7 +42,7 @@ int main(int argc, char **argv) {
     }
 
     // start the server (open files, create data structures, ...)
-    Server * server = start_server(argv[1], atoi(argv[2]), NONE);
+    Server * server = start_server(argv[1], atoi(argv[2]), type);
 
     Request request;
     int stop = 0, input = 0;
