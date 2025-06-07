@@ -13,6 +13,8 @@
 
 #define REQUESTS_LOG "tmp/requests.log"
 
+#define BLOCK_SIZE 8
+
 #define TITLE_SIZE 200
 #define AUTHORS_SIZE 200
 #define YEAR_SIZE 4

@@ -2,6 +2,7 @@
 
 #include "cache.h"
 #include "fifo_cache.h"
+#include "rand_cache.h"
 
 #include <stdlib.h>
 
@@ -31,6 +32,10 @@ Cache * cache_start(int cache_size, Cache_Type type, int source) {
 
         break;
     case RAND:
+        cache->create = &randc_create;
+        cache->destroy = &randc_destroy;
+        cache->get_doc = &randc_get_document;
+        cache->show = &randc_show;
 
         break;
     case LRU:

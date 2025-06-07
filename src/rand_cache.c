@@ -1,32 +1,33 @@
 
-#include "fifo_cache.h"
+#include "rand_cache.h"
 #include "defs.h"
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 
-typedef struct fifo {
+
+typedef struct rand {
     Document * documents;
     int * identifiers;
-    int back;
     int size;
     int source;
-} FIFO_Cache;
+} RAND_Cache;
 
 
-
-void * fifoc_create(int cache_size, int source) {
+void * randc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {
         return NULL;
     }
 
-    FIFO_Cache * cache = (FIFO_Cache *) calloc(1, sizeof(FIFO_Cache));
+    RAND_Cache * cache = (RAND_Cache *) calloc(1, sizeof(RAND_Cache));
     if (cache == NULL) {
         return NULL;
     }
 
     cache->size = cache_size;
+    cache->source = source;
 
     cache->documents = (Document *) calloc(cache->size, sizeof(Document));
     if (cache->documents == NULL) {
@@ -46,44 +47,42 @@ void * fifoc_create(int cache_size, int source) {
     // ids also work as valid bits, -1 is invalid
     memset(cache->identifiers, -1, cache->size * sizeof(int));
 
-    cache->back = 0;
-    cache->source = source;
-
     return cache;
 }
 
 
-void fifoc_destroy(void * cache) {
+void randc_destroy(void * cache) {
     if (cache != NULL) {
-        FIFO_Cache * fifo = (FIFO_Cache *) cache;
-        if (fifo->documents != NULL) {
-            free(fifo->documents);
+        RAND_Cache * rc = (RAND_Cache *) cache;
+
+        if (rc->documents != NULL) {
+            free(rc->documents);
         }
 
-        if (fifo->identifiers != NULL) {
-            free(fifo->identifiers);
+        if (rc->identifiers != NULL) {
+            free(rc->identifiers);
         }
 
-        free(fifo);
+        free(rc);
     }
 }
 
 
-Document * fifoc_get_document(void * cache, int identifier) {
-    if (cache == NULL || identifier < 0) {
+Document * randc_get_document(void * cache, int identifier) {
+    if (cache == NULL && identifier < 0) {
         return NULL;
     }
 
-    FIFO_Cache * fifo = (FIFO_Cache *) cache;
+    RAND_Cache * rc = (RAND_Cache *) cache;
 
     printf("[CACHE INFO] searching in memory for %d\n", identifier);
 
     int i;
     // search the document in the cache
-    for (i = 0; i < fifo->size && fifo->identifiers[i] != identifier; i++);
+    for (i = 0; i < rc->size && rc->identifiers[i] != identifier; i++);
 
     // document is not in cache
-    if (i == fifo->size) {
+    if (i == rc->size) {
         // get BLOCK_SIZE documents from metadata.bin
 
         printf("[CACHE INFO] going to disk for %d\n", identifier);
@@ -94,10 +93,10 @@ Document * fifoc_get_document(void * cache, int identifier) {
         }
 
         // go to the right position
-        lseek(fifo->source, identifier * sizeof(Document), SEEK_SET);
+        lseek(rc->source, identifier * sizeof(Document), SEEK_SET);
 
         // read the documents from disk
-        ssize_t out = read(fifo->source, docs, BLOCK_SIZE * sizeof(Document));
+        ssize_t out = read(rc->source, docs, BLOCK_SIZE * sizeof(Document));
         if (out == -1) {
             perror("read()");
             return NULL;
@@ -108,29 +107,35 @@ Document * fifoc_get_document(void * cache, int identifier) {
         // number of documents read, less or equal than BLOCK_SIZE
         int temp_size = out / sizeof(Document);
 
-        // fill the cache with a new block
-        for (i = 0; i < temp_size; i++) {
-            memcpy(fifo->documents + fifo->back, docs + i, sizeof(docs[i]));
-            fifo->identifiers[fifo->back] = identifier + i;
-            fifo->back = (fifo->back + 1) % fifo->size;
+        srand(time(0));
+
+        int rand_position = rand() % rc->size;
+
+        // place the documents in a random place
+        // will replace documents, whether the cache is full or not!!!
+        for (int i = 0; i < temp_size; i++) {
+            memcpy(rc->documents + rand_position, docs + i, sizeof(docs[i]));
+            rc->identifiers[rand_position] = identifier + i;
+            rand_position = (rand_position + 1) % rc->size;
         }
 
         return result;
     }
 
-    return clone_document(fifo->documents + i);
+    return clone_document(rc->documents + i);
 }
 
 
-void fifoc_show(const void * cache) {
+void randc_show(const void * cache) {
     if (cache != NULL) {
-        FIFO_Cache * fifo = (FIFO_Cache *) cache;
+        RAND_Cache * rc = (RAND_Cache *) cache;
 
-        printf("\n- FIFO CACHE [capacity: %d]\n", fifo->size);
+        printf("\n- RAND CACHE [capacity: %d]\n", rc->size);
         printf("[INDEX, IDENTIFIER]\n");
 
-        for (int i = 0; i < fifo->size; i++) {
-            printf("[%3d, %5d]\n", i, fifo->identifiers[i]);
+        for (int i = 0; i < rc->size; i++) {
+            printf("[%3d, %5d]\n", i, rc->identifiers[i]);
         }
     }
 }
+
