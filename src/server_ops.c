@@ -3,6 +3,7 @@
 #include "index_table.h"
 #include "document.h"
 #include "utils.h"
+#include "defs.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,7 @@
 #include <sys/wait.h>
 
 typedef struct server {
-    char *document_folder;
+    char * document_folder;
     int metadata_file;
     Free_List * free_list;
     Index_Table * index_table;
@@ -75,8 +76,6 @@ Server * start_server(const char *document_folder, int cache_size) {
     close(control_file);
     unlink(CONTROL_FILE);
 
-    set_global_id(it_size(server->index_table) + 1);
-
     // TODO
     // start the cache
 
@@ -89,9 +88,6 @@ Server * start_server(const char *document_folder, int cache_size) {
 
 
 static void send_response(pid_t client, const void * response, size_t size) {
-    pid_t proc = fork();
-
-    if (proc == 0) {
     char client_fifo[50];
     sprintf(client_fifo, "%s_%d", CLIENT_FIFO, client);
 
@@ -102,7 +98,7 @@ static void send_response(pid_t client, const void * response, size_t size) {
         return;
     }
 
-    // send response
+    // send response to client
     ssize_t out = write(output, response, size);
     if (out == -1) {
         perror("write()");
@@ -128,29 +124,23 @@ static void send_response(pid_t client, const void * response, size_t size) {
         perror("write()");
         return;
     }
-
-    _exit(0);
-    } else if (proc == -1) {
-        /* error code */
-        perror("fork()");
-    }
 }
 
-static Document * get_document(Server * server, unsigned identifier) {
-
-    off_t position = it_get_entry(server->index_table, identifier);
-    if (position == -1) {
+static Document * get_document(Server * server, int identifier) {
+    // check if the entry is valid
+    if (it_entry_is_valid(server->index_table, identifier) == 0) {
         return NULL;
     }
 
     Document doc;
 
     // go to the right position
-    if (lseek(server->metadata_file, position, SEEK_SET) == -1) {
+    if (lseek(server->metadata_file, identifier * sizeof(Document), SEEK_SET) == -1) {
         perror("lseek()");
         return NULL;
     }
 
+    // read the metadata
     ssize_t out = read(server->metadata_file, &doc, sizeof(doc));
     if (out == -1) {
         perror("read()");
@@ -161,28 +151,147 @@ static Document * get_document(Server * server, unsigned identifier) {
 }
 
 
-int process_request(Server * server, const Request *request) {
-    unsigned identifier = 0;
-    off_t position = 0;
-    pid_t proc = 0;
-    Document * doc = NULL;
+static char * list_documents(Server * server, const char * keyword, int n_procs) {
+
+    // close the metadata file, so that processes don't share the offset
+    close(server->metadata_file);
+
+    // get the number of documents indexed
+    int identifier = 0;
+    ssize_t out = 0;
+    Document doc;
+    // open the comunication channels
+    int fildes[2];
+    if (pipe(fildes) == -1) {
+        perror("pipe()");
+        return NULL;
+    }
     
+    // get the valid ids
+    int * valid_ids = it_get_valid_ids(server->index_table);
+    unsigned count = it_size(server->index_table);
+    unsigned chunk = count / n_procs;
+    int metatada = -1;
+    char * path;
+
+    if (n_procs > count) {
+        n_procs = count;
+    }
+
+    for (int i = 0; i < n_procs; i++) {
+        switch (fork()) {
+        case -1:
+            /* error code */
+            perror("fork()");
+            return NULL;
+        case 0:
+            /* child code */
+
+            // close readind side of the pipe
+            close(fildes[0]);
+
+            identifier = i * chunk;
+
+            // last process does the remaining ids
+            if (i == n_procs - 1) {
+                chunk += count % n_procs;
+            }
+
+            // open the metadata.bin file
+            metatada = open(STORAGE_FILE, O_RDONLY);
+            if (metatada == -1) {
+                perror("open()");
+                _exit(1);
+            }
+
+            count = 0;
+            while (count < chunk) {
+                lseek(metatada, valid_ids[identifier] * sizeof(Document), SEEK_SET);
+
+                // read the document from metadata.bin
+                out = read(metatada, &doc, sizeof(doc));
+                if (out == -1) {
+                    perror("read()");
+                    _exit(1);
+                }
+
+                path = join_paths(server->document_folder, doc.path);
+
+                // check if the keyword exists in the file
+                out = keyword_exists(path, keyword);
+
+                if (path != NULL) {
+                    free(path);
+                }
+
+                if (out == 0) {
+                    // send the id to the parent process
+                    out = write(fildes[1], &(valid_ids[identifier]), sizeof(valid_ids[identifier]));
+                }
+
+                identifier++;
+                count++;
+            }
+
+            _exit(0);
+        default:
+            /* parent code */
+            break;
+        }
+    }
+
+    close(fildes[1]);
+
+    char buffer[BUFSIZ];
+    char temp[12];
+
+    strcat(buffer, "[");
+
+    // receive the ids with the keyword
+    while ((out = read(fildes[0], &identifier, sizeof(identifier))) > 0) {
+        sprintf(temp, "%d, ", identifier);
+        strcat(buffer, temp);
+    }
+
+    // terminate the string
+    if (strlen(buffer) > 1) {
+        buffer[strlen(buffer) - 2] = ']';
+        buffer[strlen(buffer) - 1] = '\0';
+    }
+
+    // wait for the child processes
+    for (int i = 0; i < n_procs; i++) {
+        wait(NULL);
+    }
+
+    return strdup(buffer);
+}
+
+
+
+int process_request(Server * server, const Request *request) {
+    int identifier = 0;
+    off_t position = 0;
+    Document * doc = NULL;
+    int temp = 0;
+    char result[BUFSIZ];
+
     switch (request->operation) {
     case INDEX:
         /* index document */
 
-        position = fl_pop(server->free_list, &identifier);
-        
-        if (position == -1) {
+        if (fl_is_empty(server->free_list) != 0) {
             // empty list, append to the file
             position = lseek(server->metadata_file, 0, SEEK_END);
+            identifier = position / sizeof(Document);
         } else {
+            identifier = fl_pop(server->free_list);
             // go to the empty spot
-            lseek(server->metadata_file, position, SEEK_SET);
+            lseek(server->metadata_file, identifier * sizeof(Document), SEEK_SET);
         }
 
         // create document
-        doc = create_document(identifier, request->title, request->authors, request->year, request->path);
+        doc = create_document(request->title, request->authors, request->year, request->path);
         if (doc == NULL) {
             return -1;
         }
@@ -194,15 +303,23 @@ int process_request(Server * server, const Request *request) {
             return -1;
         }
 
-        identifier = get_document_id(doc);
         destroy_document(doc);
 
         // add entry to the index table
-        if (it_add_entry(server->index_table, position, identifier) != 0) {
+        if (it_add_entry(server->index_table, identifier) != 0) {
             return -1;
         }
 
-        send_response(request->client, &identifier, sizeof(identifier));
+        switch (fork()) {
+            case -1:
+                perror("fork()");
+                return 1;
+            case 0:
+                send_response(request->client, &identifier, sizeof(identifier));
+                _exit(0);
+            default:
+                break;
+        }
 
         break;
 
@@ -212,17 +329,26 @@ int process_request(Server * server, const Request *request) {
         identifier = atoi(request->title);
 
         // remove entry from table
-        position = it_remove_entry(server->index_table, identifier);
+        temp = it_remove_entry(server->index_table, identifier);
 
-        if (position != -1) {
-            // add free position and id to free list
-            fl_push(server->free_list, position, identifier);
+        if (temp != -1) {
+            // add free id to free list
+            fl_push(server->free_list, identifier);
         } else {
             // document not found
-            identifier = 0;
+            identifier = -1;
         }
 
-        send_response(request->client, &identifier, sizeof(identifier));
+        switch (fork()) {
+            case -1:
+                perror("fork()");
+                return 1;
+            case 0:
+                send_response(request->client, &identifier, sizeof(identifier));
+                _exit(0);
+            default:
+                break;
+        }
 
         break;
     
@@ -231,16 +357,25 @@ int process_request(Server * server, const Request *request) {
 
         identifier = atoi(request->title);
 
-        // get the document (from cache or file)
+        // get the document (from cache or disk)
         doc = get_document(server, identifier);
 
         // document was not found
         if (doc == NULL) {
             doc = malloc(sizeof(Document));
-            doc->id = 0;
+            sprintf(doc->title, "Document was not found");
         }
 
-        send_response(request->client, doc, sizeof(Document));
+        switch (fork()) {
+            case -1:
+                perror("fork()");
+                return 1;
+            case 0:
+                send_response(request->client, &doc, sizeof(Document));
+                _exit(0);
+            default:
+                break;
+        }
 
         destroy_document(doc);
 
@@ -254,18 +389,57 @@ int process_request(Server * server, const Request *request) {
         // get the document (from cache or file)
         doc = get_document(server, identifier);
 
-        int count = -1;
-        if (doc != NULL) {
-            char *path = join_paths(server->document_folder, doc->path);
-            // count the number of lines
-            count = count_keyword(path, request->authors);
+        switch (fork()) {
+            case -1:
+                perror("fork()");
+                return 1;
+            case 0:
+                int count = -1;
+                if (doc != NULL) {
+                    char *path = join_paths(server->document_folder, doc->path);
+                    // count the number of lines
+                    count = count_keyword(path, request->authors);
 
-            if (path != NULL) {
-                free(path);
-            }
+                    if (path != NULL) {
+                        free(path);
+                    }
+                }
+
+                send_response(request->client, &count, sizeof(count));
+                _exit(0);
+            default:
+                break;
         }
 
-        send_response(request->client, &count, sizeof(count));
+        break;
+
+    case LIST_WORD:
+        /* identify the documents that contain the keyword */
+
+        // get the number of processes
+        int n_procs = atoi(request->authors);
+
+        switch (fork()) {
+        case -1:
+            /* error code */
+            perror("fork()");
+            return -1;
+        case 0:
+
+            // get the list of ids
+            char * other = list_documents(server, request->title, n_procs);
+            if (other != NULL) {
+                strcpy(result, other);
+                free(other);
+            } else {
+                sprintf(result, "Error searching the documents!!");
+            }
+
+            send_response(request->client, result, strlen(result) + 1);
+            _exit(0);
+        default:
+            break;
+        }
 
         break;
 

@@ -104,3 +104,38 @@ char * join_paths(const char *folder, const char * file) {
 
     return strdup(result);
 }
+
+int keyword_exists(const char * path, const char * keyword) {
+    if (path == NULL || keyword == NULL) {
+        return -1;
+    }
+
+    int status = -1, out = -1;
+    pid_t proc = fork();
+
+    switch (proc) {
+    case -1:
+        /* error code */
+        perror("fork()");
+        return -1;
+    case 0:
+        /* child code */
+
+        execlp("grep", "grep", "-q", keyword, path, NULL);
+
+        perror("execlp()");
+        _exit(127);
+    default:
+        /* parent code */
+
+        proc = waitpid(proc, &status, 0);
+
+        if (WIFEXITED(status) == 1) {
+            out = WEXITSTATUS(status);
+        }
+
+        break;
+    }
+    
+    return out;
+}
