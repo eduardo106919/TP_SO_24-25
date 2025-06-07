@@ -261,7 +261,7 @@ static char * list_documents(Server * server, const char * keyword, int n_procs)
     // get the number of documents indexed
     int identifier = 0;
     ssize_t out = 0;
-    Document doc;
+    Document *doc = NULL;
     // open the comunication channels
     int fildes[2];
     if (pipe(fildes) == -1) {
@@ -308,16 +308,11 @@ static char * list_documents(Server * server, const char * keyword, int n_procs)
 
             count = 0;
             while (count < chunk) {
-                lseek(metatada, valid_ids[identifier] * sizeof(Document), SEEK_SET);
 
-                // read the document from metadata.bin
-                out = read(metatada, &doc, sizeof(doc));
-                if (out == -1) {
-                    perror("read()");
-                    _exit(1);
-                }
+                // get document from cache or disk
+                doc = get_document(server, valid_ids[identifier]);
 
-                path = join_paths(server->document_folder, doc.path);
+                path = join_paths(server->document_folder, doc->path);
 
                 // check if the keyword exists in the file
                 out = keyword_exists(path, keyword);
