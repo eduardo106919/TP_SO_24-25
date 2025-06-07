@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     // open the server fifo
     int server = open(SERVER_FIFO, O_WRONLY);
     if (server == -1) {
-        perror("open()");
+        printf("SERVER IS OFFLINE\n");
         unlink(fifo_name);
         return 2;
     }
