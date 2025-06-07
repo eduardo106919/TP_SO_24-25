@@ -7,7 +7,7 @@ TMP_DIR = tmp
 BIN_DIR = bin
 
 CC = gcc
-CFLAGS = -Wall -g -I$(INC_DIR)
+CFLAGS = -Wall -g -I$(INC_DIR) # -fsanitize=address
 LDFLAGS =
 
 
@@ -50,12 +50,12 @@ docs:
 
 .PHONY: trash
 trash:
-	rm -f $(TMP_DIR)/*
+	rm -f $(TMP_DIR)/*.bin $(TMP_DIR)/server_fifo $(TMP_DIR)/client_fifo_*
 
 
 .PHONY: clean
 clean:
 	rm -f $(BLD_DIR)/*.o
 	rm -f $(BIN_DIR)/*
-	rm -f $(TMP_DIR)/*
+	rm -f $(TMP_DIR)/*.bin $(TMP_DIR)/server_fifo $(TMP_DIR)/client_fifo_*
 
