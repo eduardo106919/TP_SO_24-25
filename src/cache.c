@@ -1,0 +1,75 @@
+
+
+#include "cache.h"
+#include "fifo_cache.h"
+
+#include <stdlib.h>
+
+
+typedef struct cache {
+    Cache_Type type;
+    void * cache;
+    void * (*create)(int , int);
+    void (*destroy)(void *);
+    Document * (*get_doc)(void *, int);
+    void (*show)(const void *);
+} Cache;
+
+
+Cache * cache_start(int cache_size, Cache_Type type, int source) {
+    Cache * cache = (Cache *) calloc(1, sizeof(Cache));
+    if (cache == NULL) {
+        return NULL;
+    }
+
+    switch (type) {
+    case FIFO:
+        cache->create = &fifoc_create;
+        cache->destroy = &fifoc_destroy;
+        cache->get_doc = &fifoc_get_document;
+        cache->show = &fifoc_show;
+
+        break;
+    case RAND:
+
+        break;
+    case LRU:
+
+        break;
+    default:
+        free(cache);
+        return NULL;
+    }
+
+    cache->type = type;
+    cache->cache = cache->create(cache_size, source);
+
+    return cache;
+}
+
+
+void cache_destroy(Cache * cache) {
+    if (cache != NULL) {
+
+        cache->destroy(cache->cache);
+
+        free(cache);
+    }
+}
+
+
+Document * cache_get_document(Cache * cache, int identifier) {
+    if (cache == NULL || identifier < 0) {
+        return NULL;
+    }
+
+    return cache->get_doc(cache->cache, identifier);
+}
+
+
+void show_cache(const Cache * cache) {
+    if (cache != NULL) {
+        cache->show(cache->cache);
+    }
+}
+
