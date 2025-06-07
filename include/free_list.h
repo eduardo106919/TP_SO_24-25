@@ -3,9 +3,9 @@
  * @author Eduardo Freitas Fernandes (ef05238@gmail.com)
  * @brief Free list implementation for managing available space in a file system.
  *
- * The free list maintains a linked list of available (free) positions within a file,
- * enabling efficient space management for file systems or storage systems.
- * Each free position is associated with an identifier for tracking purposes.
+ * The free list maintains a linked list of available (free) identifiers corresponding 
+ * to a position in a file, enabling efficient space management for file systems 
+ * or storage systems.
  * 
  * @note All create/destroy operations should be paired:
  *       - fl_create() must be matched with fl_destroy()
@@ -14,11 +14,10 @@
  * @example Free_List usage:
  * @code
  * Free_List *fl = fl_create();
- * fl_push(fl, 1024, 1);  // Add position 1024 with ID 1
- * fl_push(fl, 2048, 2);  // Add position 2048 with ID 2
+ * fl_push(fl, 1);  // Add ID 1
+ * fl_push(fl, 2);  // Add ID 2
  * 
- * unsigned id;
- * off_t pos = fl_pop(fl, &id);  // Retrieve next available position
+ * unsigned id = fl_pop(fl);  // Retrieve next available identifier
  * 
  * fl_destroy(fl);  // Clean up
  * @endcode
@@ -61,46 +60,44 @@ Free_List * fl_create(void);
 void fl_destroy(Free_List * fl);
 
 /**
- * @brief Adds a file position and identifier to the Free List
+ * @brief Adds a file identifier to the Free List
  * 
  * @param fl Pointer to the Free List
- * @param position File offset to mark as available
- * @param id Associated identifier for the position
+ * @param id File identifier to mark as available
  * @return Operation status
  * @retval 0 on success
  * @retval 1 on memory allocation error
- * @retval -1 on invalid input (NULL fl)
+ * @retval -1 on invalid input (NULL fl or invalid id)
  */
-int fl_push(Free_List * fl, off_t position, unsigned id);
+int fl_push(Free_List * fl, int id);
 
 /**
- * @brief Removes and returns the next available file position
+ * @brief Removes and returns the next available file identifier
  * 
  * @param fl Pointer to the Free List
- * @param id [out] Pointer to store the associated identifier
- * @return The available file position
- * @retval -1 if fl is NULL, id is NULL, or list is empty
+ * @return The available file identifier
+ * @retval -1 if fl is NULL, or list is empty
  * 
- * @note The returned position is removed from the free list
+ * @note The returned identifier is removed from the free list
  */
-off_t fl_pop(Free_List * fl, unsigned *id);
+int fl_pop(Free_List * fl);
 
 /**
- * @brief Returns the current number of available positions
+ * @brief Returns the current number of available identifiers
  * 
  * @param fl Pointer to the Free List
- * @return Number of available positions
+ * @return Number of available identifiers
  * @retval 0 if fl is NULL or list is empty
  */
 unsigned fl_size(const Free_List * fl);
 
 /**
- * @brief Checks if the Free List contains any available positions
+ * @brief Checks if the Free List contains any available identifiers
  * 
  * @param fl Pointer to the Free List
  * @return List emptiness status
  * @retval true if fl is NULL or list is empty
- * @retval false if list contains positions
+ * @retval false if list contains identifiers
  */
 bool fl_is_empty(const Free_List * fl);
 

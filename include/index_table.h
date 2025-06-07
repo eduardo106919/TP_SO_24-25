@@ -70,7 +70,7 @@ void it_destroy(Index_Table *it);
  * 
  * @note If the id already exists, the position will be updated
  */
-int it_add_entry(Index_Table *it, off_t position, unsigned id);
+int it_add_entry(Index_Table *it, int id);
 
 /**
  * @brief Removes and returns the file position for the given identifier
@@ -82,9 +82,9 @@ int it_add_entry(Index_Table *it, off_t position, unsigned id);
  * 
  * @note The entry is marked as invalid in the table
  */
-off_t it_remove_entry(Index_Table *it, unsigned id);
+int it_remove_entry(Index_Table *it, int id);
 
-off_t it_get_entry(const Index_Table * it, unsigned id);
+int it_entry_is_valid(const Index_Table * it, int id);
 
 /**
  * @brief Returns the current number of entries in the table
@@ -135,5 +135,8 @@ Index_Table *it_upload(int file);
  * @note No effect if it or file is invalid
  */
 void it_record(const Index_Table *it, int file);
+
+int * it_get_valid_ids(const Index_Table * it);
+
 
 #endif

@@ -1,12 +1,13 @@
+
 #include "free_list.h"
+#include "document.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 
 struct link {
-    off_t position;
-    unsigned id;
+    int id;
     struct link * next;
 };
 
@@ -16,14 +17,13 @@ typedef struct free_list {
 } Free_List;
 
 
-static struct link * create_link(off_t position, unsigned id) {
+static struct link * create_link(int id) {
     struct link * node = (struct link *) calloc(1, sizeof(struct link));
     if (node == NULL) {
         return NULL;
     }
 
     node->id = id;
-    node->position = position;
     node->next = NULL;
 
     return node;
@@ -57,11 +57,11 @@ void fl_destroy(Free_List * fl) {
 }
 
 
-int fl_push(Free_List * fl, off_t position, unsigned id) {
-    if (fl == NULL)
+int fl_push(Free_List * fl, int id) {
+    if (fl == NULL || id < 0)
         return -1;
 
-    struct link * new_node = create_link(position, id);
+    struct link * new_node = create_link(id);
     if (new_node == NULL) {
         return 1;
     }
@@ -74,8 +74,8 @@ int fl_push(Free_List * fl, off_t position, unsigned id) {
 }
 
 
-off_t fl_pop(Free_List * fl, unsigned *id) {
-    if (fl == NULL || id == NULL) {
+int fl_pop(Free_List * fl) {
+    if (fl == NULL) {
         return -1;
     }
 
@@ -85,8 +85,7 @@ off_t fl_pop(Free_List * fl, unsigned *id) {
         return -1;
     }
 
-    off_t result = temp->position;
-    *id = temp->id;
+    int result = temp->id;
     temp = temp->next;
     
     free(fl->head);
@@ -113,7 +112,7 @@ void fl_show(const Free_List * fl) {
 
         printf("\n- FREE LIST [size: %3u]\n", fl->size);
         while (temp != NULL) {
-            printf("[%4u, %5ld]\n", temp->id, temp->position);
+            printf("[%4d, %5ld]\n", temp->id, temp->id * sizeof(Document));
             temp = temp->next;
         }
     }
@@ -139,13 +138,13 @@ Free_List * fl_upload(int file) {
         return fl;
     }
 
-    struct link temp;
+    int temp;
     unsigned i = 0;
 
     // iterate over the recorded links
     while (i < size && (out = read(file, &temp, sizeof(temp))) > 0) {
         // add the position and id to the free list
-        if(fl_push(fl, temp.position, temp.id) != 0) {
+        if(fl_push(fl, temp) != 0) {
             return fl;
         }
 
@@ -167,9 +166,9 @@ void fl_record(const Free_List * fl, int file) {
         
         struct link * temp = fl->head;
 
-        // record every link from the list in the file
+        // record every id from the list in the file
         while (temp != NULL && out > 0) {
-            out = write(file, temp, sizeof(struct link));
+            out = write(file, &(temp->id), sizeof(temp->id));
             
             temp = temp->next;
         }
