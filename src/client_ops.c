@@ -112,9 +112,9 @@ void show_reply(Operation op, const void * reply) {
 
         break;
     case REMOVE:
-        unsigned identifier = * (unsigned *) reply;
+        int identifier = * (int *) reply;
 
-        if (identifier == 0) {
+        if (identifier == -1) {
             printf("Document was not found\n");
         } else {
             printf("Index entry %u deleted\n", identifier);
@@ -123,8 +123,9 @@ void show_reply(Operation op, const void * reply) {
         break;
     case CONSULT:
         Document * doc = (Document *) reply;
-        if (doc->id == 0) {
-            printf("Document was not found\n");
+        char *not_found_msg = "Document was not found";
+        if (strcmp(doc->title, not_found_msg) == 0) {
+            printf("%s\n", not_found_msg);
         } else {
             show_document(doc);
         }
@@ -139,6 +140,9 @@ void show_reply(Operation op, const void * reply) {
         } else {
             printf("Count: %d\n", count);
         }
+    case LIST_WORD:
+
+        printf("IDs: %s\n", (char *) reply);
 
         break;
     default:

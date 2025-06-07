@@ -88,6 +88,9 @@ int main(int argc, char **argv) {
         case COUNT_WORD:
             response_size = sizeof(int);
             break;
+        case LIST_WORD:
+            response_size = BUFSIZ * sizeof(sizeof(char));
+            break;
         default:
             break;
         }
