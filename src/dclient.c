@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
 
         // show response to user
         show_reply(request.operation, response);
+        free(response);
     }
     
     unlink(fifo_name);

@@ -140,6 +140,7 @@ void show_reply(Operation op, const void * reply) {
         } else {
             printf("Count: %d\n", count);
         }
+        break;
     case LIST_WORD:
 
         printf("IDs: %s\n", (char *) reply);

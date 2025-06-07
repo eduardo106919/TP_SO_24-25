@@ -11,6 +11,8 @@
 #define STORAGE_FILE "tmp/metadata.bin"
 #define CONTROL_FILE "tmp/metadata_control.bin"
 
+#define REQUESTS_LOG "tmp/requests.log"
+
 #define TITLE_SIZE 200
 #define AUTHORS_SIZE 200
 #define YEAR_SIZE 4

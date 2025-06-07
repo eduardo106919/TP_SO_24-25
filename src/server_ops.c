@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "defs.h"
 
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -14,10 +15,78 @@
 typedef struct server {
     char * document_folder;
     int metadata_file;
+    int requests_log_pipe;
     Free_List * free_list;
     Index_Table * index_table;
 } Server;
 
+
+static void record_requests(int reading_side) {
+
+    int file = open(REQUESTS_LOG, O_CREAT | O_WRONLY | O_APPEND, 0666);
+    if (file == -1) {
+        perror("open()");
+        return;
+    }
+
+    ssize_t out = 0;
+    Request temp;
+    char buffer[BUFSIZ];
+    char op;
+    time_t t;
+    struct tm *tm_info;
+    char temp_time[20];
+    char args[512];
+
+    // read messages from the server
+    while ((out = read(reading_side, &temp, sizeof(temp))) > 0) {
+        // Get the current time
+        time(&t);
+
+        // Convert it to local time representation
+        tm_info = localtime(&t);
+
+        strftime(temp_time, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
+        switch (temp.operation) {
+        case INDEX:
+            op = 'A';
+            sprintf(args, "%s %s %s %s", temp.title, temp.authors, temp.year, temp.path);
+            break;
+        case REMOVE:
+            op = 'D';
+            sprintf(args, "%s", temp.title);
+            break;
+        case CONSULT:
+            op = 'C';
+            sprintf(args, "%s", temp.title);
+            break;
+        case COUNT_WORD:
+            op = 'L';
+            sprintf(args, "%s %s", temp.title, temp.authors);
+            break;
+        case LIST_WORD:
+            op = 'S';
+            sprintf(args, "%s %s", temp.title, temp.authors);
+            break;
+        case KILL:
+            op = 'K';
+            memset(args, 0, sizeof(args));
+            break;
+        case SHUTDOWN:
+            op = 'F';
+            memset(args, 0, sizeof(args));
+            break;
+        default:
+            op = 'X';
+            memset(args, 0, sizeof(args));
+            break;
+        }
+
+        sprintf(buffer, "[%d] requested %c | args: %s | (%s)\n", temp.client, op, args, temp_time);
+        out = write(file, buffer, strlen(buffer));
+    }
+}
 
 Server * start_server(const char *document_folder, int cache_size) {
     printf("\n[SERVER IS STARTING]\n");
@@ -76,6 +145,35 @@ Server * start_server(const char *document_folder, int cache_size) {
     close(control_file);
     unlink(CONTROL_FILE);
 
+    int requests_pipe[2];
+    if(pipe(requests_pipe) != 0) {
+        perror("pipe()");
+        shutdown_server(server);
+        return NULL;
+    }
+
+    switch (fork()) {
+    case -1:
+        /* error code */
+        perror("fork()");
+        shutdown_server(server);
+        return NULL;
+    case 0:
+        /* child code */
+        close(requests_pipe[1]); // close writing side of the pipe
+        close(server->metadata_file);
+
+        record_requests(requests_pipe[0]);
+        close(requests_pipe[0]); // close reading side of the pipe
+
+        _exit(0);
+    default:
+        break;
+    }
+
+    close(requests_pipe[0]);
+    server->requests_log_pipe = requests_pipe[1];
+
     // TODO
     // start the cache
 
@@ -116,6 +214,10 @@ static void send_response(pid_t client, const void * response, size_t size) {
     Request request;
     request.operation = KILL;
     request.client = getpid();
+    memset(request.title, 0, sizeof(request.title));
+    memset(request.authors, 0, sizeof(request.authors));
+    memset(request.year, 0, sizeof(request.year));
+    memset(request.path, 0, sizeof(request.path));
 
     // tell the server that the job is done
     out = write(server, &request, sizeof(request));
@@ -275,6 +377,14 @@ int process_request(Server * server, const Request *request) {
     Document * doc = NULL;
     int temp = 0;
     char result[BUFSIZ];
+    ssize_t out;
+
+    // record the request in the log file
+    out = write(server->requests_log_pipe, request, sizeof(Request));
+    if (out == -1) {
+        perror("write()");
+        return -1;
+    }
 
     switch (request->operation) {
     case INDEX:
@@ -297,7 +407,7 @@ int process_request(Server * server, const Request *request) {
         }
 
         // write the document in the metadata file
-        ssize_t out = write(server->metadata_file, doc, sizeof(Document));
+        out = write(server->metadata_file, doc, sizeof(Document));
         if (out == -1) {
             perror("write()");
             return -1;
@@ -371,7 +481,7 @@ int process_request(Server * server, const Request *request) {
                 perror("fork()");
                 return 1;
             case 0:
-                send_response(request->client, &doc, sizeof(Document));
+                send_response(request->client, doc, sizeof(Document));
                 _exit(0);
             default:
                 break;
@@ -502,6 +612,7 @@ void shutdown_server(Server * server) {
     fl_destroy(server->free_list);
     it_destroy(server->index_table);
 
+    close(server->requests_log_pipe);
 
     // TODO
     // FREE THE CACHE

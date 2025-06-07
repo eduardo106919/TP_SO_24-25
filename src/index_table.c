@@ -8,7 +8,7 @@
 #include <limits.h>
 
 
-#define INIT_SIZE 20
+#define INIT_SIZE 4
 #define SET_SIZE 8
 
 
@@ -63,8 +63,7 @@ int it_add_entry(Index_Table *it, int id) {
     if ((it->capacity * SET_SIZE) == it->count || set >= it->capacity) {
 
         // grow 1.5 times
-        unsigned new_capacity = it->capacity * 3;
-        new_capacity /= 2;
+        unsigned new_capacity = it->capacity * 2;
 
         if (set >= new_capacity) {
             new_capacity = set + 1;
