@@ -6,8 +6,6 @@
 Operation check_operation(const char *opr);
 int define_request(Request *request, int argc, char **argv);
 
-void show_reply(Operation op, const void * reply);
-
-
+void show_reply(Operation op, const void *reply);
 
 #endif

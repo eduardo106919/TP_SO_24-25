@@ -1,21 +1,19 @@
 
-#include "utils.h"
+#include "cache.h"
 #include "defs.h"
 #include "server_ops.h"
-#include "cache.h"
+#include "utils.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
-
+#include <unistd.h>
 
 static void usage(const char *command) {
     printf("Usage:\n");
     printf("%s document_folder cache_size [cache_type]\n", command);
 }
-
 
 int main(int argc, char **argv) {
 
@@ -42,12 +40,11 @@ int main(int argc, char **argv) {
     }
 
     // start the server (open files, create data structures, ...)
-    Server * server = start_server(argv[1], atoi(argv[2]), type);
+    Server *server = start_server(argv[1], atoi(argv[2]), type);
 
     Request request;
     int stop = 0, input = 0;
     ssize_t out = 0;
-
 
     while (stop == 0) {
         // open the server fifo
@@ -68,13 +65,10 @@ int main(int argc, char **argv) {
 
         // process request
         stop = process_request(server, &request);
-
     }
 
     // shut down the server (close files, free data structures, ...)
     shutdown_server(server);
-
-
 
     return 0;
 }

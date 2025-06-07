@@ -2,27 +2,24 @@
 #include "lru_cache.h"
 #include "defs.h"
 
-
 #include <stdlib.h>
 #include <string.h>
 
-
 typedef struct lru {
-    Document * documents;
-    int * identifiers;
-    char * ref_bits;
+    Document *documents;
+    int *identifiers;
+    char *ref_bits;
     int size;
     int source;
     int back; // next position to start looking
 } LRU_Cache;
 
-
-void * lruc_create(int cache_size, int source) {
+void *lruc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {
         return NULL;
     }
 
-    LRU_Cache * lru = (LRU_Cache *) calloc(1, sizeof(LRU_Cache));
+    LRU_Cache *lru = (LRU_Cache *)calloc(1, sizeof(LRU_Cache));
     if (lru == NULL) {
         return NULL;
     }
@@ -31,7 +28,7 @@ void * lruc_create(int cache_size, int source) {
     lru->source = source;
     lru->back = 0;
 
-    lru->documents = (Document *) calloc(lru->size, sizeof(Document));
+    lru->documents = (Document *)calloc(lru->size, sizeof(Document));
     if (lru->documents == NULL) {
         free(lru);
         return NULL;
@@ -39,7 +36,7 @@ void * lruc_create(int cache_size, int source) {
 
     memset(lru->documents, 0, lru->size * sizeof(Document));
 
-    lru->identifiers = (int *) calloc(lru->size, sizeof(int));
+    lru->identifiers = (int *)calloc(lru->size, sizeof(int));
     if (lru->identifiers == NULL) {
         free(lru->documents);
         free(lru);
@@ -48,7 +45,7 @@ void * lruc_create(int cache_size, int source) {
 
     memset(lru->identifiers, -1, lru->size * sizeof(int));
 
-    lru->ref_bits = (char *) calloc(lru->size, sizeof(char));
+    lru->ref_bits = (char *)calloc(lru->size, sizeof(char));
     if (lru->ref_bits == NULL) {
         free(lru->documents);
         free(lru->ref_bits);
@@ -57,14 +54,13 @@ void * lruc_create(int cache_size, int source) {
     }
 
     memset(lru->identifiers, 0, lru->size * sizeof(char));
-    
+
     return lru;
 }
 
-
-void lruc_destroy(void * cache) {
+void lruc_destroy(void *cache) {
     if (cache != NULL) {
-        LRU_Cache * lru = (LRU_Cache *) cache;
+        LRU_Cache *lru = (LRU_Cache *)cache;
 
         if (lru->documents != NULL) {
             free(lru->documents);
@@ -82,19 +78,19 @@ void lruc_destroy(void * cache) {
     }
 }
 
-
-Document * lruc_get_document(void * cache, int identifier) {
+Document *lruc_get_document(void *cache, int identifier) {
     if (cache == NULL || identifier < 0) {
         return NULL;
     }
 
-    LRU_Cache * lru = (LRU_Cache *) cache;
+    LRU_Cache *lru = (LRU_Cache *)cache;
 
     printf("[CACHE INFO] searching in memory for %d\n", identifier);
 
     int i;
     // search the document in the cache
-    for (i = 0; i < lru->size && lru->identifiers[lru->back] != identifier; i++) {
+    for (i = 0; i < lru->size && lru->identifiers[lru->back] != identifier;
+         i++) {
         // set reference bit to 0
         lru->ref_bits[lru->back] = 0;
         lru->back = (lru->back + 1) % lru->size;
@@ -106,7 +102,7 @@ Document * lruc_get_document(void * cache, int identifier) {
 
         printf("[CACHE INFO] going to disk for %d\n", identifier);
 
-        Document * docs = (Document *) calloc(BLOCK_SIZE, sizeof(Document));
+        Document *docs = (Document *)calloc(BLOCK_SIZE, sizeof(Document));
         if (docs == NULL) {
             return NULL;
         }
@@ -121,7 +117,7 @@ Document * lruc_get_document(void * cache, int identifier) {
             return NULL;
         }
 
-        Document * result = clone_document(docs);
+        Document *result = clone_document(docs);
 
         // number of documents read, less or equal than BLOCK_SIZE
         int temp_size = out / sizeof(Document);
@@ -155,17 +151,16 @@ Document * lruc_get_document(void * cache, int identifier) {
     return clone_document(lru->documents + lru->back);
 }
 
-
-void lruc_show(const void * cache) {
+void lruc_show(const void *cache) {
     if (cache != NULL) {
-        LRU_Cache * lru = (LRU_Cache *) cache;
+        LRU_Cache *lru = (LRU_Cache *)cache;
 
         printf("\n- LRU CACHE [capacity: %d]\n", lru->size);
         printf("[INDEX, REF_BIT, IDENTIFIER]\n");
 
         for (int i = 0; i < lru->size; i++) {
-            printf("[%3d, %d, %5d]\n", i, lru->ref_bits[i], lru->identifiers[i]);
+            printf("[%3d, %d, %5d]\n", i, lru->ref_bits[i],
+                   lru->identifiers[i]);
         }
     }
 }
-

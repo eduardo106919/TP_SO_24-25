@@ -1,15 +1,13 @@
 
 #include "utils.h"
 
-
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sys/wait.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 int create_fifo(const char *name) {
     struct stat st;
@@ -28,8 +26,7 @@ int create_fifo(const char *name) {
     return 0;
 }
 
-
-int count_keyword(const char * path, const char * keyword) {
+int count_keyword(const char *path, const char *keyword) {
     if (path == NULL || keyword == NULL) {
         return -1;
     }
@@ -84,8 +81,7 @@ int count_keyword(const char * path, const char * keyword) {
     return atoi(buffer);
 }
 
-
-char * join_paths(const char *folder, const char * file) {
+char *join_paths(const char *folder, const char *file) {
     if (folder == NULL || file == NULL) {
         return NULL;
     }
@@ -105,7 +101,7 @@ char * join_paths(const char *folder, const char * file) {
     return strdup(result);
 }
 
-int keyword_exists(const char * path, const char * keyword) {
+int keyword_exists(const char *path, const char *keyword) {
     if (path == NULL || keyword == NULL) {
         return -1;
     }
@@ -114,28 +110,28 @@ int keyword_exists(const char * path, const char * keyword) {
     pid_t proc = fork();
 
     switch (proc) {
-    case -1:
-        /* error code */
-        perror("fork()");
-        return -1;
-    case 0:
-        /* child code */
+        case -1:
+            /* error code */
+            perror("fork()");
+            return -1;
+        case 0:
+            /* child code */
 
-        execlp("grep", "grep", "-q", keyword, path, NULL);
+            execlp("grep", "grep", "-q", keyword, path, NULL);
 
-        perror("execlp()");
-        _exit(127);
-    default:
-        /* parent code */
+            perror("execlp()");
+            _exit(127);
+        default:
+            /* parent code */
 
-        proc = waitpid(proc, &status, 0);
+            proc = waitpid(proc, &status, 0);
 
-        if (WIFEXITED(status) == 1) {
-            out = WEXITSTATUS(status);
-        }
+            if (WIFEXITED(status) == 1) {
+                out = WEXITSTATUS(status);
+            }
 
-        break;
+            break;
     }
-    
+
     return out;
 }

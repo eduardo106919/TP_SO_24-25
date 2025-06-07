@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
 #define SERVER_FIFO "tmp/server_fifo"
 #define CLIENT_FIFO "tmp/client_fifo"
 
@@ -20,7 +19,6 @@
 #define YEAR_SIZE 4
 #define PATH_SIZE 64
 
-
 typedef enum {
     INDEX,
     REMOVE,
@@ -31,8 +29,6 @@ typedef enum {
     KILL,
 } Operation;
 
-
-
 typedef struct {
     pid_t client;
     Operation operation;
@@ -42,14 +38,10 @@ typedef struct {
     char path[PATH_SIZE];
 } Request;
 
-
-
 typedef struct {
     Operation operation;
     char response[BUFSIZ];
     char valid;
 } Reply;
-
-
 
 #endif

@@ -2,33 +2,30 @@
 #include "fifo_cache.h"
 #include "defs.h"
 
-#include <string.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 typedef struct fifo {
-    Document * documents;
-    int * identifiers;
+    Document *documents;
+    int *identifiers;
     int back;
     int size;
     int source;
 } FIFO_Cache;
 
-
-
-void * fifoc_create(int cache_size, int source) {
+void *fifoc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {
         return NULL;
     }
 
-    FIFO_Cache * cache = (FIFO_Cache *) calloc(1, sizeof(FIFO_Cache));
+    FIFO_Cache *cache = (FIFO_Cache *)calloc(1, sizeof(FIFO_Cache));
     if (cache == NULL) {
         return NULL;
     }
 
     cache->size = cache_size;
 
-    cache->documents = (Document *) calloc(cache->size, sizeof(Document));
+    cache->documents = (Document *)calloc(cache->size, sizeof(Document));
     if (cache->documents == NULL) {
         free(cache);
         return NULL;
@@ -36,7 +33,7 @@ void * fifoc_create(int cache_size, int source) {
 
     memset(cache->documents, 0, cache->size * sizeof(Document));
 
-    cache->identifiers = (int *) calloc(cache->size, sizeof(int));
+    cache->identifiers = (int *)calloc(cache->size, sizeof(int));
     if (cache->identifiers == NULL) {
         free(cache->documents);
         free(cache);
@@ -52,10 +49,9 @@ void * fifoc_create(int cache_size, int source) {
     return cache;
 }
 
-
-void fifoc_destroy(void * cache) {
+void fifoc_destroy(void *cache) {
     if (cache != NULL) {
-        FIFO_Cache * fifo = (FIFO_Cache *) cache;
+        FIFO_Cache *fifo = (FIFO_Cache *)cache;
         if (fifo->documents != NULL) {
             free(fifo->documents);
         }
@@ -68,19 +64,19 @@ void fifoc_destroy(void * cache) {
     }
 }
 
-
-Document * fifoc_get_document(void * cache, int identifier) {
+Document *fifoc_get_document(void *cache, int identifier) {
     if (cache == NULL || identifier < 0) {
         return NULL;
     }
 
-    FIFO_Cache * fifo = (FIFO_Cache *) cache;
+    FIFO_Cache *fifo = (FIFO_Cache *)cache;
 
     printf("[CACHE INFO] searching in memory for %d\n", identifier);
 
     int i;
     // search the document in the cache
-    for (i = 0; i < fifo->size && fifo->identifiers[i] != identifier; i++);
+    for (i = 0; i < fifo->size && fifo->identifiers[i] != identifier; i++)
+        ;
 
     // document is not in cache
     if (i == fifo->size) {
@@ -88,7 +84,7 @@ Document * fifoc_get_document(void * cache, int identifier) {
 
         printf("[CACHE INFO] going to disk for %d\n", identifier);
 
-        Document * docs = (Document *) calloc(BLOCK_SIZE, sizeof(Document));
+        Document *docs = (Document *)calloc(BLOCK_SIZE, sizeof(Document));
         if (docs == NULL) {
             return NULL;
         }
@@ -103,7 +99,7 @@ Document * fifoc_get_document(void * cache, int identifier) {
             return NULL;
         }
 
-        Document * result = clone_document(docs);
+        Document *result = clone_document(docs);
 
         // number of documents read, less or equal than BLOCK_SIZE
         int temp_size = out / sizeof(Document);
@@ -121,10 +117,9 @@ Document * fifoc_get_document(void * cache, int identifier) {
     return clone_document(fifo->documents + i);
 }
 
-
-void fifoc_show(const void * cache) {
+void fifoc_show(const void *cache) {
     if (cache != NULL) {
-        FIFO_Cache * fifo = (FIFO_Cache *) cache;
+        FIFO_Cache *fifo = (FIFO_Cache *)cache;
 
         printf("\n- FIFO CACHE [capacity: %d]\n", fifo->size);
         printf("[INDEX, IDENTIFIER]\n");

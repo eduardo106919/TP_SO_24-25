@@ -1,15 +1,13 @@
 
-#include "defs.h"
 #include "document.h"
+#include "defs.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-
-
-
-Document * create_document(const char *title, const char *authors, const char *year, const char *path) {
-    Document * doc = (Document *) calloc(1, sizeof(Document));
+Document *create_document(const char *title, const char *authors,
+                          const char *year, const char *path) {
+    Document *doc = (Document *)calloc(1, sizeof(Document));
     if (doc == NULL) {
         return NULL;
     }
@@ -22,13 +20,13 @@ Document * create_document(const char *title, const char *authors, const char *y
     return doc;
 }
 
-void destroy_document(Document * doc) {
+void destroy_document(Document *doc) {
     if (doc != NULL) {
         free(doc);
     }
 }
 
-Document * clone_document(const Document * doc) {
+Document *clone_document(const Document *doc) {
     if (doc == NULL) {
         return NULL;
     }
@@ -36,8 +34,7 @@ Document * clone_document(const Document * doc) {
     return create_document(doc->title, doc->authors, doc->year, doc->path);
 }
 
-
-void show_document(const Document * doc) {
+void show_document(const Document *doc) {
     if (doc != NULL) {
         printf("Title: %s\n", doc->title);
         printf("Authors: %s\n", doc->authors);

@@ -1,15 +1,14 @@
 
-#include "defs.h"
-#include "utils.h"
 #include "client_ops.h"
+#include "defs.h"
 #include "document.h"
+#include "utils.h"
 
-#include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sys/stat.h>
+#include <stdio.h>
 #include <stdlib.h>
-
+#include <sys/stat.h>
+#include <unistd.h>
 
 static void usage(const char *command) {
     printf("Usage:\n");
@@ -20,7 +19,6 @@ static void usage(const char *command) {
     printf("%s -s 'keyword' [nr_processes]\n", command);
     printf("%s -f\n", command);
 }
-
 
 int main(int argc, char **argv) {
     // no arguments
@@ -76,27 +74,26 @@ int main(int argc, char **argv) {
         size_t response_size = 0;
 
         switch (request.operation) {
-        case INDEX:
-            response_size = sizeof(unsigned);
-            break;
-        case REMOVE:
-            response_size = sizeof(unsigned);
-            break;
-        case CONSULT:
-            response_size = sizeof(Document);
-            break;
-        case COUNT_WORD:
-            response_size = sizeof(int);
-            break;
-        case LIST_WORD:
-            response_size = BUFSIZ * sizeof(sizeof(char));
-            break;
-        default:
-            break;
+            case INDEX:
+                response_size = sizeof(unsigned);
+                break;
+            case REMOVE:
+                response_size = sizeof(unsigned);
+                break;
+            case CONSULT:
+                response_size = sizeof(Document);
+                break;
+            case COUNT_WORD:
+                response_size = sizeof(int);
+                break;
+            case LIST_WORD:
+                response_size = BUFSIZ * sizeof(sizeof(char));
+                break;
+            default:
+                break;
         }
 
-        void * response = malloc(response_size);
-
+        void *response = malloc(response_size);
 
         // receive response from server
         out = read(client, response, response_size);
@@ -110,12 +107,11 @@ int main(int argc, char **argv) {
 
         unlink(fifo_name);
 
-
         // show response to user
         show_reply(request.operation, response);
         free(response);
     }
-    
+
     unlink(fifo_name);
 
     return 0;
