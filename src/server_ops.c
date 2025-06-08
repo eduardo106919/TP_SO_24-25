@@ -14,16 +14,17 @@
 #include <unistd.h>
 
 typedef struct server {
-    char *document_folder;
-    int metadata_file;
-    int requests_log_pipe;
-    Free_List *free_list;
-    Index_Table *index_table;
-    Cache *cache;
+    char *document_folder;      /**< Directory containing the indexed documents */
+    int metadata_file;          /**< File descriptor for the storage file */
+    int requests_log_pipe;      /**< Channel to register operations made by the server */
+    Free_List *free_list;       /**< Pointer to a Free List */
+    Index_Table *index_table;   /**< Pointer to am Index Table */
+    Cache *cache;               /**< Pointer to the Cache */
 } Server;
 
-static void record_requests(int reading_side) {
 
+static void record_requests(int reading_side) {
+    // open the requests.log file
     int file = open(REQUESTS_LOG, O_CREAT | O_WRONLY | O_APPEND, 0666);
     if (file == -1) {
         perror("open()");
@@ -179,7 +180,7 @@ Server *start_server(const char *document_folder, int cache_size,
     server->requests_log_pipe = requests_pipe[1];
 
     // start the cache
-    if (type != NONE) {
+    if (type != NONE && cache_size > 0) {
         server->cache = cache_start(cache_size, type, server->metadata_file);
         if (server->cache == NULL) {
             shutdown_server(server);
@@ -189,6 +190,7 @@ Server *start_server(const char *document_folder, int cache_size,
         server->cache = NULL;
     }
 
+    // show empty data structures
     it_show(server->index_table);
     fl_show(server->free_list);
     show_cache(server->cache);
@@ -610,6 +612,7 @@ void shutdown_server(Server *server) {
         free(server->document_folder);
     }
 
+    // show the final state of the data structures
     it_show(server->index_table);
     fl_show(server->free_list);
     show_cache(server->cache);
@@ -636,8 +639,8 @@ void shutdown_server(Server *server) {
     cache_destroy(server->cache);
 
     close(server->requests_log_pipe);
-
     close(server->metadata_file);
+
     free(server);
 
     unlink(SERVER_FIFO);
