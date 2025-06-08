@@ -53,7 +53,7 @@ void *lruc_create(int cache_size, int source) {
         return NULL;
     }
 
-    memset(lru->identifiers, 0, lru->size * sizeof(char));
+    memset(lru->ref_bits, 0, lru->size * sizeof(char));
 
     return lru;
 }
@@ -125,6 +125,17 @@ Document *lruc_get_document(void *cache, int identifier) {
         int j = 0;
         // fill the cache with a new block
         for (i = 0; i < lru->size && j < temp_size; i++) {
+            // fill the empty slots first
+            if (lru->identifiers[i] == -1) {
+                memcpy(lru->documents + i, docs + j, sizeof(docs[j]));
+                lru->identifiers[i] = identifier + j;
+                lru->ref_bits[i] = 1;
+                j++;
+            }
+        }
+
+        // place the remaining in places with reference bits to 0
+        for (i = 0; i < lru->size && j < temp_size; i++) {
             if (lru->ref_bits[i] == 0) {
                 memcpy(lru->documents + i, docs + j, sizeof(docs[j]));
                 lru->identifiers[i] = identifier + j;
@@ -133,21 +144,19 @@ Document *lruc_get_document(void *cache, int identifier) {
             }
         }
 
-        // place the remaining
-        while (j < temp_size) {
-            memcpy(lru->documents + lru->back, docs + j, sizeof(docs[j]));
-            lru->identifiers[lru->back] = identifier + j;
-            lru->ref_bits[lru->back] = 1;
-            lru->back = (lru->back + 1) % lru->size;
+        // when the previous options don't work, place it at the front
+        for (i = 0; i < lru->size && j < temp_size; i++) {
+            memcpy(lru->documents + i, docs + j, sizeof(docs[j]));
+            lru->identifiers[i] = identifier + j;
+            lru->ref_bits[i] = 1;
             j++;
         }
 
         return result;
     }
-
-    lruc_show(lru);
-
+    
     lru->ref_bits[lru->back] = 1;
+
     return clone_document(lru->documents + lru->back);
 }
 
