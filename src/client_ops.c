@@ -4,6 +4,7 @@
 
 #include <string.h>
 
+
 Operation check_operation(const char *opr) {
     if (strlen(opr) != 2) {
         return -1;
@@ -45,6 +46,7 @@ int define_request(Request *request, int argc, char **argv) {
 
     switch (request->operation) {
         case INDEX:
+            /* index document */
             if (argc != 6) {
                 return 1;
             }
@@ -56,6 +58,7 @@ int define_request(Request *request, int argc, char **argv) {
 
             break;
         case REMOVE:
+            /* remove index */
             if (argc != 3) {
                 return 1;
             }
@@ -64,6 +67,7 @@ int define_request(Request *request, int argc, char **argv) {
 
             break;
         case CONSULT:
+            /* consult document */
             if (argc != 3) {
                 return 1;
             }
@@ -72,6 +76,7 @@ int define_request(Request *request, int argc, char **argv) {
 
             break;
         case COUNT_WORD:
+            /* count occurrences */
             if (argc != 4) {
                 return 1;
             }
@@ -81,6 +86,7 @@ int define_request(Request *request, int argc, char **argv) {
 
             break;
         case LIST_WORD:
+            /* list documents */
             if (argc != 3 && argc != 4) {
                 return 1;
             }
@@ -102,13 +108,16 @@ int define_request(Request *request, int argc, char **argv) {
 }
 
 void show_reply(Operation op, const void *reply) {
-
     switch (op) {
         case INDEX:
-            printf("Document %u indexed\n", *(unsigned *)reply);
+            /* index document */
+
+            printf("Document %u indexed\n", *(int *)reply);
 
             break;
         case REMOVE:
+            /* remove index */
+
             int identifier = *(int *)reply;
 
             if (identifier == -1) {
@@ -119,6 +128,8 @@ void show_reply(Operation op, const void *reply) {
 
             break;
         case CONSULT:
+            /* consult document */
+
             Document *doc = (Document *)reply;
             char *not_found_msg = "Document was not found";
             if (strcmp(doc->title, not_found_msg) == 0) {
@@ -129,6 +140,7 @@ void show_reply(Operation op, const void *reply) {
 
             break;
         case COUNT_WORD:
+            /* count occurrences */
 
             int count = *(int *)reply;
 
@@ -139,6 +151,7 @@ void show_reply(Operation op, const void *reply) {
             }
             break;
         case LIST_WORD:
+            /* list documents */
 
             printf("IDs: %s\n", (char *)reply);
 

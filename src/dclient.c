@@ -75,10 +75,10 @@ int main(int argc, char **argv) {
 
         switch (request.operation) {
             case INDEX:
-                response_size = sizeof(unsigned);
+                response_size = sizeof(int);
                 break;
             case REMOVE:
-                response_size = sizeof(unsigned);
+                response_size = sizeof(int);
                 break;
             case CONSULT:
                 response_size = sizeof(Document);
