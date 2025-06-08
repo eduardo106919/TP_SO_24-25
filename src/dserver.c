@@ -13,7 +13,7 @@
 
 static void usage(const char *command) {
     printf("Usage:\n");
-    printf("%s document_folder cache_size [cache_type]\n", command);
+    printf("%s document_folder cache_size [-g] [cache_type]\n", command);
 }
 
 int main(int argc, char **argv) {
@@ -34,6 +34,18 @@ int main(int argc, char **argv) {
         type = RAND;
     } else if (strcmp(argv[argc - 1], "LRU") == 0) {
         type = LRU;
+    }
+
+    // turn off debugging messages
+    if ((strcmp(argv[argc - 1], "-g") == 0) || (strcmp(argv[argc - 2], "-g") == 0)) {
+        int trash = open("/dev/null", O_WRONLY);
+        if (trash == -1) {
+            perror("open()");
+            return 1;
+        }
+
+        dup2(trash, 1);
+        close(trash);
     }
 
     // create server fifo

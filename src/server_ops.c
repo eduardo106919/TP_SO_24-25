@@ -372,6 +372,8 @@ static char *list_documents(Server *server, const char *keyword, int n_procs) {
     if (strlen(buffer) > 1) {
         buffer[strlen(buffer) - 2] = ']';
         buffer[strlen(buffer) - 1] = '\0';
+    } else {
+        strcat(buffer, "]");
     }
 
     // wait for the child processes
