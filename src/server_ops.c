@@ -425,13 +425,16 @@ int process_request(Server *server, const Request *request) {
                 perror("write()");
                 return -1;
             }
-
-            destroy_document(doc);
-
+            
             // add entry to the index table
             if (it_add_entry(server->index_table, identifier) != 0) {
                 return -1;
             }
+
+            // add the document to the cache
+            cache_add_document(server->cache, identifier, doc);
+            
+            destroy_document(doc);
 
             switch (fork()) {
                 case -1:
@@ -458,6 +461,9 @@ int process_request(Server *server, const Request *request) {
             if (temp != -1) {
                 // add free id to free list
                 fl_push(server->free_list, identifier);
+
+                // remove document from cache
+                cache_remoce_document(server->cache, identifier);
             } else {
                 // document not found
                 identifier = -1;
@@ -490,14 +496,6 @@ int process_request(Server *server, const Request *request) {
                     perror("fork()");
                     return 1;
                 case 0:
-
-                    // close(server->metadata_file);
-                    // // re-open the file, so the offset is not shared
-                    // server->metadata_file = open(STORAGE_FILE, O_RDONLY);
-                    // if (server->metadata_file == -1) {
-                    //     perror("open()");
-                    //     _exit(1);
-                    // }
 
                     // document was not found
                     if (doc == NULL) {

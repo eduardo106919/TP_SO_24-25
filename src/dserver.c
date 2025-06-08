@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -16,6 +17,8 @@ static void usage(const char *command) {
 }
 
 int main(int argc, char **argv) {
+
+    srand(time(0));
 
     // not enough arguments
     if (argc < 3) {
