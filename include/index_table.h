@@ -96,10 +96,10 @@ int it_remove_entry(Index_Table *it, int id);
  * @param it Pointer to the index table
  * @param id File ID to check
  * @return Validity status
- * @retval true if the file is valid (bit is 1)
- * @retval false if invalid, not found, or NULL table
+ * @retval 1 if the file is valid (bit is 1)
+ * @retval 0 if invalid, not found, or NULL table
  */
-bool it_entry_is_valid(const Index_Table *it, int id);
+int it_entry_is_valid(const Index_Table *it, int id);
 
 /**
  * @brief Returns the number of valid files in the table

@@ -473,7 +473,7 @@ int process_request(Server *server, const Request *request) {
                 fl_push(server->free_list, identifier);
 
                 // remove document from cache
-                cache_remoce_document(server->cache, identifier);
+                cache_remove_document(server->cache, identifier);
             } else {
                 // document not found
                 identifier = -1;
