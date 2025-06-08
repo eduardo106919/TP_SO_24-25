@@ -13,6 +13,12 @@
 #include <time.h>
 #include <unistd.h>
 
+/**
+ * @brief Server core data structure
+ *
+ * Contains all runtime state and components of the document server.
+ * Manages document storage, indexing, caching, and request processing.
+ */
 typedef struct server {
     char *document_folder;      /**< Directory containing the indexed documents */
     int metadata_file;          /**< File descriptor for the storage file */

@@ -11,6 +11,13 @@
 #define INIT_SIZE 4         /**< Initial size for the Table */
 #define SET_SIZE 8          /**< Number of bits in a character */
 
+/**
+ * @brief Compact bit-based index table for tracking document validity
+ *
+ * Space-efficient structure where each bit represents the validity status
+ * (1 = valid/exists, 0 = invalid/removed) of a document in storage.
+ * Provides O(1) validity checks and minimal memory overhead.
+ */
 typedef struct index_table {
     unsigned capacity;      /**< Array capacity */
     unsigned count;         /**< Number of documents indexed */

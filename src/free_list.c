@@ -5,11 +5,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+/**
+ * @brief Node structure for the free list
+ * 
+ * Represents a single available document slot in storage.
+ * Forms the building block of the Free_List linked list.
+ */
 struct link {
     int id;                 /**< Document Identifier */
     struct link *next;      /**< Pointer to the next node */
 };
 
+/**
+ * @brief Free list management structure
+ * 
+ * Maintains a linked list of available document slots in storage.
+ * Provides O(1) insertion/removal from the head of the list.
+ */
 typedef struct free_list {
     struct link *head;      /**< Pointer to the head of the list */
     unsigned size;          /**< Number of elements on the list */

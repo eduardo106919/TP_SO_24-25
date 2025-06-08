@@ -146,13 +146,10 @@ Index_Table *it_upload(int file);
  *
  * @param it Pointer to the index table to save
  * @param file Open file descriptor to write to
- * @return Operation status
- * @retval 0 on success
- * @retval -1 on failure
  *
  * @note Writes compact binary format (bits packed into bytes)
  */
-int it_record(const Index_Table *it, int file);
+void it_record(const Index_Table *it, int file);
 
 /**
  * @brief Retrieves array of all valid file IDs
