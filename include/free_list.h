@@ -18,7 +18,7 @@
  * fl_push(fl, 1);  // Add ID 1
  * fl_push(fl, 2);  // Add ID 2
  *
- * unsigned id = fl_pop(fl);  // Retrieve next available identifier
+ * int id = fl_pop(fl);  // Retrieve next available identifier
  *
  * fl_destroy(fl);  // Clean up
  * @endcode
@@ -34,8 +34,8 @@
 /**
  * @brief Opaque structure representing a Free List
  *
- * The Free_List maintains a collection of available file positions
- * and their associated identifiers in a LIFO (stack) order.
+ * The Free_List maintains a collection of available 
+ * file identifiers in a LIFO (stack) order.
  */
 typedef struct free_list Free_List;
 

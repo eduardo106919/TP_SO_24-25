@@ -6,13 +6,13 @@
 #include <stdlib.h>
 
 struct link {
-    int id;
-    struct link *next;
+    int id;                 /**< Document Identifier */
+    struct link *next;      /**< Pointer to the next node */
 };
 
 typedef struct free_list {
-    struct link *head;
-    unsigned size;
+    struct link *head;      /**< Pointer to the head of the list */
+    unsigned size;          /**< Number of elements on the list */
 } Free_List;
 
 static struct link *create_link(int id) {
@@ -43,6 +43,7 @@ void fl_destroy(Free_List *fl) {
     if (fl != NULL) {
         struct link *temp = fl->head, *other = NULL;
 
+        // free every node
         while (temp != NULL) {
             other = temp->next;
             free(temp);
@@ -62,6 +63,7 @@ int fl_push(Free_List *fl, int id) {
         return 1;
     }
 
+    // add the new node to the head
     new_node->next = fl->head;
     fl->head = new_node;
     fl->size++;
@@ -83,6 +85,7 @@ int fl_pop(Free_List *fl) {
     int result = temp->id;
     temp = temp->next;
 
+    // remove the head of the list
     free(fl->head);
     fl->head = temp;
     fl->size--;
@@ -130,7 +133,7 @@ Free_List *fl_upload(int file) {
 
     // iterate over the recorded links
     while (i < size && (out = read(file, &temp, sizeof(temp))) > 0) {
-        // add the position and id to the free list
+        // add the id to the free list
         if (fl_push(fl, temp) != 0) {
             return fl;
         }

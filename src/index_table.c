@@ -7,13 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INIT_SIZE 4
-#define SET_SIZE 8
+
+#define INIT_SIZE 4         /**< Initial size for the Table */
+#define SET_SIZE 8          /**< Number of bits in a character */
 
 typedef struct index_table {
-    unsigned capacity;
-    unsigned count;
-    char *table;
+    unsigned capacity;      /**< Array capacity */
+    unsigned count;         /**< Number of documents indexed */
+    char *table;            /**< Array of valid bits */
 } Index_Table;
 
 Index_Table *it_create(void) {
@@ -57,7 +58,7 @@ int it_add_entry(Index_Table *it, int id) {
     // table is full or set is larger than capacity
     if ((it->capacity * SET_SIZE) == it->count || set >= it->capacity) {
 
-        // grow 1.5 times
+        // double the size
         unsigned new_capacity = it->capacity * 2;
 
         if (set >= new_capacity) {
@@ -202,12 +203,14 @@ int *it_get_valid_ids(const Index_Table *it) {
         return NULL;
     }
 
+    // allocate space for the result
     int *result = (int *)calloc(it->count, sizeof(int));
     if (result == NULL) {
         return NULL;
     }
 
     unsigned i, j, m = 0;
+    // fill the array with valid indexes
     for (i = 0; i < it->capacity; i++) {
         for (j = 0; j < SET_SIZE; j++) {
             // entry is valid
