@@ -117,6 +117,34 @@ Document *fifoc_get_document(void *cache, int identifier) {
     return clone_document(fifo->documents + i);
 }
 
+void fifoc_add_document(void *cache, int identifier, Document * doc) {
+    if (cache != NULL && identifier >= 0 && doc != NULL) {
+        FIFO_Cache * fifo = (FIFO_Cache *) cache;
+
+        // place the document at the back of the queue
+        memcpy(fifo->documents + fifo->back, doc, sizeof(Document));
+        fifo->identifiers[fifo->back] = identifier;
+        fifo->back = (fifo->back + 1) % fifo->size;
+    }
+}
+
+
+void fifoc_remove_document(void *cache, int identifier) {
+    if (cache != NULL && identifier >= 0) {
+        FIFO_Cache * fifo = (FIFO_Cache *) cache;
+
+        int i = 0;
+        // search for the document
+        for (; i < fifo->size && fifo->identifiers[i] != identifier; i++);
+
+        // found the document
+        if (i < fifo->size) {
+            fifo->identifiers[i] = -1;
+        }
+    }
+}
+
+
 void fifoc_show(const void *cache) {
     if (cache != NULL) {
         FIFO_Cache *fifo = (FIFO_Cache *)cache;

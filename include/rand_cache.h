@@ -8,6 +8,8 @@ typedef struct rand RAND_Cache;
 void *randc_create(int cache_size, int source);
 void randc_destroy(void *cache);
 Document *randc_get_document(void *cache, int identifier);
+void randc_add_document(void *cache, int identifier, Document * doc);
+void randc_remove_document(void *cache, int identifier);
 void randc_show(const void *cache);
 
 #endif

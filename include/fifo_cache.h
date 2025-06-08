@@ -8,6 +8,8 @@ typedef struct fifo FIFO_Cache;
 void *fifoc_create(int cache_size, int source);
 void fifoc_destroy(void *cache);
 Document *fifoc_get_document(void *cache, int identifier);
+void fifoc_add_document(void *cache, int identifier, Document * doc);
+void fifoc_remove_document(void *cache, int identifier);
 void fifoc_show(const void *cache);
 
 #endif

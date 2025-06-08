@@ -8,6 +8,8 @@ typedef struct lru LRU_Cache;
 void *lruc_create(int cache_size, int source);
 void lruc_destroy(void *cache);
 Document *lruc_get_document(void *cache, int identifier);
+void lruc_add_document(void *cache, int identifier, Document * doc);
+void lruc_remove_document(void *cache, int identifier);
 void lruc_show(const void *cache);
 
 #endif

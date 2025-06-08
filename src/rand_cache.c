@@ -121,6 +121,44 @@ Document *randc_get_document(void *cache, int identifier) {
     return clone_document(rc->documents + i);
 }
 
+void randc_add_document(void *cache, int identifier, Document * doc) {
+    if (cache != NULL && identifier >= 0 && doc != NULL) {
+        RAND_Cache *rc = (RAND_Cache *)cache;
+
+        int i = 0;
+        // search for empty positions
+        for (; i < rc->size && rc->identifiers[i] != -1; i++);
+
+        int position = i;
+        // cache is full, replace one document in a random place
+        if (position == rc->size) {
+            srand(time(0));
+            position = rand() % rc->size;
+        }
+
+        // place the document in the position
+        memcpy(rc->documents + position, doc, sizeof(Document));
+        rc->identifiers[position] = identifier;
+    }
+}
+
+
+void randc_remove_document(void *cache, int identifier) {
+    if (cache != NULL && identifier >= 0) {
+        RAND_Cache *rc = (RAND_Cache *)cache;
+
+        int i = 0;
+        // search for the document
+        for (; i < rc->size && rc->identifiers[i] != identifier; i++);
+
+        if (i < rc->size) {
+            // mark the position as invalid
+            rc->identifiers[i] = -1;
+        }
+    }
+}
+
+
 void randc_show(const void *cache) {
     if (cache != NULL) {
         RAND_Cache *rc = (RAND_Cache *)cache;

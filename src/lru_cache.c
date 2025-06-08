@@ -160,6 +160,50 @@ Document *lruc_get_document(void *cache, int identifier) {
     return clone_document(lru->documents + lru->back);
 }
 
+
+void lruc_add_document(void *cache, int identifier, Document * doc) {
+    if (cache != NULL && identifier >= 0 && doc != NULL) {
+        LRU_Cache *lru = (LRU_Cache *)cache;
+
+        int i = 0;
+        // search for empty positions
+        for (; i < lru->size && lru->identifiers[i] != -1; i++);
+
+        int position = i;
+        if (position == lru->size) {
+            // cache is full, search for reference bits to 0
+            // does one more iteration, if the cache has no ref bit to 0, the last one will be 0
+            for (i = 0; i <= lru->size && lru->ref_bits[lru->back] != 0; i++) {
+                lru->ref_bits[lru->back] = 0;
+                lru->back = (lru->back + 1) % lru->size;
+            }
+
+            position = lru->back;
+        }
+
+        // place the document
+        memcpy(lru->documents + position, doc, sizeof(Document));
+        lru->identifiers[position] = identifier;
+        lru->ref_bits[position] = 1;
+    }
+}
+
+void lruc_remove_document(void *cache, int identifier) {
+    if (cache != NULL && identifier >= 0) {
+        LRU_Cache *lru = (LRU_Cache *)cache;
+
+        int i = 0;
+        // search for the document
+        for (; i < lru->size && lru->identifiers[i] != identifier; i++);
+
+        if (i < lru->size) {
+            // found the document
+            lru->identifiers[i] = -1;
+        }
+    }
+}
+
+
 void lruc_show(const void *cache) {
     if (cache != NULL) {
         LRU_Cache *lru = (LRU_Cache *)cache;
