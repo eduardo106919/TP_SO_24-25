@@ -117,6 +117,17 @@ int keyword_exists(const char *path, const char *keyword) {
         case 0:
             /* child code */
 
+            int trash = open("dev/null", O_RDONLY);
+            if (trash == -1) {
+                perror("open()");
+                _exit(1);
+            }
+
+            // redirect stdout to /dev/null (just for safety)
+            dup2(trash, 1);
+            close(trash);
+
+            // run grep and then read the return value
             execlp("grep", "grep", "-q", keyword, path, NULL);
 
             perror("execlp()");
@@ -124,6 +135,7 @@ int keyword_exists(const char *path, const char *keyword) {
         default:
             /* parent code */
 
+            // wait for the grep comand
             proc = waitpid(proc, &status, 0);
 
             if (WIFEXITED(status) == 1) {
