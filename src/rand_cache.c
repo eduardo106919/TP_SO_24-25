@@ -6,12 +6,43 @@
 #include <string.h>
 #include <time.h>
 
+/**
+ * @brief A randomized cache for storing documents and their identifiers.
+ *
+ * This structure implements a cache that uses a **random eviction policy**.
+ * Documents are stored in an array alongside their corresponding identifiers.
+ * If an identifier is set to `-1`, the corresponding cache entry is considered **invalid**.
+ * In the case of a cache miss, documents are retrieved from a file using a provided file descriptor.
+ */
 typedef struct rand {
+    /**
+     * @brief Array of cached documents.
+     *
+     * Each entry corresponds to a document currently stored in the cache.
+     */
     Document *documents;
+
+    /**
+     * @brief Array of document identifiers corresponding to each cached document.
+     *
+     * Each identifier maps to the document at the same index in the `documents` array.
+     * A value of `-1` indicates that the slot is unused or invalid.
+     */
     int *identifiers;
+
+    /**
+     * @brief Maximum number of documents the cache can hold.
+     */
     int size;
+
+    /**
+     * @brief File descriptor for the source document file.
+     *
+     * Used to retrieve documents from disk in the event of a cache miss.
+     */
     int source;
 } RAND_Cache;
+
 
 void *randc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {

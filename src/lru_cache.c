@@ -5,14 +5,52 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+/**
+ * @brief Represents a Least Recently Used (LRU) cache for Documents.
+ *
+ * This cache stores Documents with their identifiers and uses
+ * approximate LRU eviction, based on reference bits.
+ */
 typedef struct lru {
+    /**
+     * @brief Array of documents currently stored in the cache.
+     * 
+     */
     Document *documents;
+
+    /**
+     * @brief Array of identifiers corresponding to each document.
+     * 
+     */
     int *identifiers;
+
+    /**
+     * @brief Reference bits array indicating if a position was searched previously, 
+     * used to approximate LRU behavior.
+     * 
+     */
     char *ref_bits;
+
+    /**
+     * @brief Number of entries the cache can hold.
+     * 
+     */
     int size;
+
+    /**
+     * @brief File descriptor used to retrieve data on a cache miss.
+     * 
+     */
     int source;
-    int back; // next position to start looking
+
+    /**
+     * @brief Position index to start the next search or eviction attempt.
+     * 
+     */
+    int back;
 } LRU_Cache;
+
 
 void *lruc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {

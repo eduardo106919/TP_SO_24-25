@@ -5,13 +5,50 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+/**
+ * @brief A FIFO (First-In-First-Out) cache for storing documents.
+ *
+ * This structure implements a cache with a FIFO eviction policy. It maintains an array of documents
+ * and a parallel array of corresponding identifiers. An identifier of -1 indicates that the entry
+ * is invalid or unused. The cache fetches documents from a file (given by a file descriptor) when
+ * a cache miss occurs.
+ */
 typedef struct fifo {
+    /**
+     * @brief Array of cached documents.
+     *
+     * Each entry represents a document currently held in the cache.
+     */
     Document *documents;
+
+    /**
+     * @brief Array of document identifiers corresponding to each cached document.
+     *
+     * An identifier of -1 indicates that the entry is invalid.
+     */
     int *identifiers;
+
+    /**
+     * @brief Index to the back (insertion point) of the FIFO queue.
+     *
+     * Used to track where the next document should be inserted in the FIFO policy.
+     */
     int back;
+
+    /**
+     * @brief Maximum number of entries the cache can hold.
+     */
     int size;
+
+    /**
+     * @brief File descriptor for the source file.
+     *
+     * This file descriptor is used to fetch documents on a cache miss.
+     */
     int source;
 } FIFO_Cache;
+
 
 void *fifoc_create(int cache_size, int source) {
     if (cache_size < 0 || source < 0) {
