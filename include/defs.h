@@ -48,7 +48,7 @@ typedef enum {
     COUNT_WORD,     /**< Count occurrences of a word in a document */
     LIST_WORD,      /**< List documents containing a word */
     SHUTDOWN,       /**< Graceful server shutdown */
-    KILL,           /**< Tell the server, child work is done */
+    KILL           /**< Tell the server, child work is done */
 } Operation;
 
 /**
