@@ -117,7 +117,7 @@ int keyword_exists(const char *path, const char *keyword) {
         case 0:
             /* child code */
 
-            int trash = open("dev/null", O_RDONLY);
+            int trash = open("/dev/null", O_RDONLY);
             if (trash == -1) {
                 perror("open()");
                 _exit(1);

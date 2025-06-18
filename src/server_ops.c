@@ -92,9 +92,10 @@ static void record_requests(int reading_side) {
                 break;
         }
 
-        sprintf(buffer, "[%d] requested %c | args: %s | (%s)\n", temp.client,
-                op, args, temp_time);
-        out = write(file, buffer, strlen(buffer));
+        if (temp.operation != KILL) {
+            sprintf(buffer, "[%d] requested %c | args: %s | (%s)\n", temp.client, op, args, temp_time);
+            out = write(file, buffer, strlen(buffer));
+        }
     }
 }
 
