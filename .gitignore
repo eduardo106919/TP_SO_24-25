@@ -56,3 +56,4 @@ dataset/
 bin/
 build/
 tmp/
+results/

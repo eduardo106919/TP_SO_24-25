@@ -17,28 +17,19 @@ The **server** must be initialize before the **client**, otherwise the program w
 
 To **start** the server, run:
 ```bash
-./bin/dserver document_folder cache_size
+./bin/dserver document_folder cache_size [-g] [cache_type]
 ```
 - `document_folder`: folder where the documents to be indexed are located
 - `cache_size`: maximum number of entries to be kept in memory
-
-There is an aditional flag to the server, `-g`. If this flag is used the server shows debugging messages, like cache/disk acesses:
-```bash
-./bin/dserver -g document_folder cache_size
-```
-
-There is also an option that allows the user to select the type of cache to use:
-```bash
-./bin/dserver document_folder cache_size cache_type
-```
-- `cache_type`: type of cache eviction policy to use
+- `-g`: turns off debugging messages (optional)
+- `cache_type`: selects the eviction policy to use in the cache (optional)
 
 The valid values for `cache_type` are:
 - `FIFO`: First In First Out Eviction Policy
 - `RAND`: Random Eviction Policy
 - `LRU`: Least Recently Used Eviction Policy
 
-**Note**: if the user does not specify an eviction policy, the **Random Eviction Policy** is used.
+**Note**: if the user does not specify an eviction policy, the cache is **not used**, so the program only works with **disk management**.
 
 ### Client
 
@@ -72,10 +63,10 @@ Count the **number of lines** of a given document that contain a given **keyword
 
 Return a **list** of document identifiers that contain a given **keyword**, using N **processes**:
 ```bash
-./bin/dclient -s "keyword" "nr_processes"
+./bin/dclient -s "keyword" [nr_processes]
 ```
 - `keyword`: word to look for
-- `nr_processes`: number of processes to use
+- `nr_processes`: number of processes to use (optional)
 
 **Note**: if `nr_processes` is not specified, the default value is 1.
 
@@ -88,5 +79,17 @@ To **shut down** the server, run:
 
 
 
-## Credits
+## Others
+
+To generate **documentation**, you can run:
+```
+make docs
+```
+This command opens a Firefox tab, so be aware.
+
+
+To **clean the binary files** that persist after the server is shut down, run:
+```
+make trash
+```
 
